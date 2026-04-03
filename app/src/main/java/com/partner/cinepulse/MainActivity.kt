@@ -21,7 +21,9 @@ import com.partner.cinepulse.navigation.AppNavigation
 import com.partner.cinepulse.navigation.BottomNavigation
 import com.partner.cinepulse.navigation.Screen
 import com.partner.cinepulse.ui.theme.CinePulseTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

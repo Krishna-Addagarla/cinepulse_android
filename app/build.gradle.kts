@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -64,4 +66,21 @@ dependencies {
 
     // Material Icons Extended (includes outlined icons)
     implementation("androidx.compose.material:material-icons-extended:1.6.8")
+
+    // Hilt dependencies
+    implementation("com.google.dagger:hilt-android:2.57.2")
+    ksp("com.google.dagger:hilt-android-compiler:2.57.2")
+
+    // === Retrofit & OkHttp ===
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // === Gson (JSON parsing) ===
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // === Coroutines (for suspend functions) ===
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
 }
