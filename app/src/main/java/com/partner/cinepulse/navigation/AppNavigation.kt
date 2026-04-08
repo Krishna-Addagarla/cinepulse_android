@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.partner.cinepulse.ui.screens.auth.AuthScreen
+import com.partner.cinepulse.ui.screens.auth.OtpVerificationScreen
 import com.partner.cinepulse.ui.screens.chatbot.ChatbotScreen
 import com.partner.cinepulse.ui.screens.discussion.DiscussionsScreen
 import com.partner.cinepulse.ui.screens.home.HomeScreen
@@ -18,9 +20,31 @@ fun AppNavigation(
     navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route
-//        modifier = Modifier.padding(paddingValues)
+        startDestination = Screen.Auth.route
     ) {
+        composable(Screen.Auth.route) {
+            AuthScreen(
+                onSignInSuccess = {
+                    navController.navigate(Screen.Home.route)
+                },
+                onSignUpSuccess = {
+                    navController.navigate(Screen.Otp.route)
+                }
+            )
+
+        }
+        composable(Screen.Otp.route) {
+            OtpVerificationScreen(
+                email = "",
+                onVerificationSuccess = {
+                    navController.navigate(Screen.Home.route)
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToSearch = {

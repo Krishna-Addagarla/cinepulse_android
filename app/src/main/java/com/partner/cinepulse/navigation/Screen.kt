@@ -1,5 +1,8 @@
 package com.partner.cinepulse.navigation
 sealed class Screen(val route: String) {
+
+    object Auth : Screen("auth")
+    object Otp : Screen("otp")
     object Home : Screen("home")
     object Search : Screen("search")
     object Reviews : Screen("reviews")

@@ -1,4 +1,5 @@
 package com.partner.cinepulse.ui.screens.auth
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -9,33 +10,16 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +27,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -52,58 +37,89 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.partner.cinepulse.ui.theme.AccentBlue
-import com.partner.cinepulse.ui.theme.AccentGreen
-import com.partner.cinepulse.ui.theme.AccentRed
-import com.partner.cinepulse.ui.theme.BgDark
-import com.partner.cinepulse.ui.theme.CardBorder
-import com.partner.cinepulse.ui.theme.CardDark
-import com.partner.cinepulse.ui.theme.TextPrimary
-import com.partner.cinepulse.ui.theme.TextSecondary
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.partner.cinepulse.data.remote.models.loginRequest
+import com.partner.cinepulse.data.remote.models.registrationRequest
+import com.partner.cinepulse.ui.theme.*
+import java.util.Calendar
+import java.util.Date
 
-// ── Colour tokens ──────────────────────────────────────────────────────────────
-//private val BgDark        = Color(0xFF080C14)
-//private val CardDark      = Color(0xFF0F1623)
-//private val CardBorder    = Color(0xFF1C2333)
-////private val AccentBlue    = Color(0xFF1A6BFF)
-//private val AccentRed     = Color(0xFFE50914)
-//private val AccentGreen   = Color(0xFF1DB954)
-//private val TextPrimary   = Color(0xFFFFFFFF)
-//private val TextSecondary = Color(0xFF8A95A8)
-
-// ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun AuthScreen(
     onSignInSuccess: () -> Unit = {},
-    onSignUpSuccess: () -> Unit = {}
+    onSignUpSuccess: () -> Unit = {},
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
-    var isSignIn by remember { mutableStateOf(true) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
-    var email           by remember { mutableStateOf("") }
-    var password        by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    // ── Local UI state ────────────────────────────────────────────────────────
+    var isSignIn            by remember { mutableStateOf(true) }
+    var email               by remember { mutableStateOf("") }
+    var password            by remember { mutableStateOf("") }
+    var confirmPassword     by remember { mutableStateOf("") }
+    var dateOfBirth         by remember { mutableStateOf<Date?>(null) }
     var showPassword        by remember { mutableStateOf(false) }
     var showConfirmPassword by remember { mutableStateOf(false) }
 
+    // ── Local validation errors ───────────────────────────────────────────────
+    var passwordMismatchError by remember { mutableStateOf(false) }
+    var dobError              by remember { mutableStateOf(false) }
+
+    // ── DatePickerDialog (Android native) ────────────────────────────────────
+    // ③ Lazily created only when the DOB field is tapped
+    val calendar = remember { Calendar.getInstance() }
+    val datePickerDialog = remember {
+        android.app.DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                val selectedCalendar = Calendar.getInstance()
+                selectedCalendar.set(year, month, day, 0, 0, 0)
+                selectedCalendar.set(Calendar.MILLISECOND, 0)
+
+                dateOfBirth = selectedCalendar.time
+                dobError = false
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).apply {
+            // ④ Restrict max date to today (no future birthdays)
+            datePicker.maxDate = calendar.timeInMillis
+        }
+    }
+
+    // ── Navigation side-effects ───────────────────────────────────────────────
+    LaunchedEffect(uiState.verifyResponse) {
+        if (uiState.verifyResponse != null) {
+            onSignInSuccess()
+            viewModel.resetVerifyResponse()
+        }
+    }
+
+    LaunchedEffect(uiState.registrationSuccess) {
+        if (uiState.registrationSuccess) {
+            onSignUpSuccess()
+            viewModel.resetRegistrationState()
+        }
+    }
+
+    // ── Root container ────────────────────────────────────────────────────────
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(BgDark)
     ) {
-        // Subtle radial glow behind the form
         Box(
             modifier = Modifier
                 .size(400.dp)
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(
-                            AccentBlue.copy(alpha = 0.07f),
-                            Color.Transparent
-                        )
+                        colors = listOf(AccentBlue.copy(alpha = 0.07f), Color.Transparent)
                     )
                 )
         )
@@ -115,20 +131,19 @@ fun AuthScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Spacer(modifier = Modifier.height(72.dp))
-
-            // ── App logo ──────────────────────────────────────────────────────
             AppLogo()
-
             Spacer(modifier = Modifier.height(36.dp))
 
-            // ── Mode toggle tabs ──────────────────────────────────────────────
-            ModeToggle(isSignIn = isSignIn, onToggle = { isSignIn = it })
-
+            ModeToggle(isSignIn = isSignIn, onToggle = {
+                isSignIn = it
+                viewModel.clearError()
+                passwordMismatchError = false
+                dobError = false
+            })
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Animated header ───────────────────────────────────────────────
+            // Header
             AnimatedContent(
                 targetState = isSignIn,
                 transitionSpec = {
@@ -139,16 +154,14 @@ fun AuthScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = if (signIn) "Welcome Back" else "Create Account",
-                        color = TextPrimary,
-                        fontSize = 28.sp,
+                        color = TextPrimary, fontSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = if (signIn) "Sign in to continue your cinematic journey"
                         else "Join CinePulse and discover great cinema",
-                        color = TextSecondary,
-                        fontSize = 13.sp,
+                        color = TextSecondary, fontSize = 13.sp,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -156,99 +169,152 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── Input fields ──────────────────────────────────────────────────
+            // Email
             AuthInputField(
-                value       = email,
-                onValueChange = { email = it },
-                placeholder = "Gmail",
-                icon        = Icons.Default.Email,
-                keyboardType= KeyboardType.Email
+                value = email, onValueChange = { email = it },
+                placeholder = "Email", icon = Icons.Default.Email,
+                keyboardType = KeyboardType.Email
             )
-
             Spacer(modifier = Modifier.height(14.dp))
 
+            // Password
             AuthInputField(
-                value         = password,
-                onValueChange = { password = it },
-                placeholder   = "Password",
-                icon          = Icons.Default.Lock,
-                isPassword    = true,
-                showPassword  = showPassword,
+                value = password, onValueChange = {
+                    password = it
+                    passwordMismatchError = false
+                },
+                placeholder = "Password", icon = Icons.Default.Lock,
+                isPassword = true, showPassword = showPassword,
                 onToggleVisibility = { showPassword = !showPassword }
             )
 
-            // Confirm Password — only visible in Sign Up mode
+            // ── Sign-Up only fields ───────────────────────────────────────────
             AnimatedVisibility(
                 visible = !isSignIn,
                 enter   = fadeIn() + expandVertically(),
                 exit    = fadeOut() + shrinkVertically()
             ) {
                 Column {
+                    // Confirm Password
                     Spacer(modifier = Modifier.height(14.dp))
                     AuthInputField(
-                        value         = confirmPassword,
-                        onValueChange = { confirmPassword = it },
-                        placeholder   = "Confirm Password",
-                        icon          = Icons.Default.Lock,
-                        isPassword    = true,
-                        showPassword  = showConfirmPassword,
+                        value = confirmPassword, onValueChange = {
+                            confirmPassword = it
+                            passwordMismatchError = false
+                        },
+                        placeholder = "Confirm Password", icon = Icons.Default.Lock,
+                        isPassword = true, showPassword = showConfirmPassword,
                         onToggleVisibility = { showConfirmPassword = !showConfirmPassword }
+                    )
+
+                    // ── Date of Birth ─────────────────────────────────────────
+                    // ⑤ Tapping this field opens the native DatePickerDialog
+                    Spacer(modifier = Modifier.height(14.dp))
+                    DateOfBirthField(
+                        value    = dateOfBirth,
+                        hasError = dobError,
+                        onClick  = { datePickerDialog.show() }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Primary CTA button ────────────────────────────────────────────
+            // ── Validation / server error banners ─────────────────────────────
+            // Password mismatch (local)
+            AnimatedVisibility(
+                visible = passwordMismatchError,
+                enter   = fadeIn() + expandVertically(),
+                exit    = fadeOut() + shrinkVertically()
+            ) {
+                ErrorBanner(message = "Passwords do not match")
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // DOB missing (local)
+            AnimatedVisibility(
+                visible = dobError,
+                enter   = fadeIn() + expandVertically(),
+                exit    = fadeOut() + shrinkVertically()
+            ) {
+                ErrorBanner(message = "Please select your date of birth")
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Server error
+            AnimatedVisibility(
+                visible = uiState.errorMessage != null,
+                enter   = fadeIn() + expandVertically(),
+                exit    = fadeOut() + shrinkVertically()
+            ) {
+                uiState.errorMessage?.let { msg ->
+                    ErrorBanner(message = msg)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── CTA Button ────────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(AccentBlue)
-                    .clickable { if (isSignIn) onSignInSuccess() else onSignUpSuccess() },
+                    .background(if (uiState.isLoading) CardDark else AccentBlue)
+                    .clickable(enabled = !uiState.isLoading) {
+                        if (isSignIn) {
+                            viewModel.loginUser(
+                                loginRequest(email = email, password = password)
+                            )
+                        } else {
+                            // ⑥ local validation before hitting the network
+                            passwordMismatchError = password != confirmPassword
+                            dobError = dateOfBirth == null
+
+                            if (!passwordMismatchError && !dobError) {
+                                viewModel.registerUser(
+                                    registrationRequest(
+                                        email       = email,
+                                        password    = password,
+                                        date_of_birth = formatDateForApi(dateOfBirth!!)
+                                    )
+                                )
+                            }
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = if (isSignIn) "Sign In" else "Create Account",
-                    color = TextPrimary,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(22.dp),
+                        color       = TextPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = if (isSignIn) "Sign In" else "Create Account",
+                        color = TextPrimary, fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Footer links ──────────────────────────────────────────────────
+            // Footer
             AnimatedContent(
                 targetState = isSignIn,
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label        = "footer"
+                label = "footer"
             ) { signIn ->
                 if (signIn) {
-                    // Sign In footer
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text  = "Forgot Password?",
-                            color = TextSecondary,
-                            fontSize = 13.sp,
-                            modifier = Modifier.clickable { }
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = buildAnnotatedString {
-                                withStyle(SpanStyle(color = TextSecondary, fontSize = 13.sp)) {
-                                    append("Don't have an account? ")
-                                }
-                                withStyle(SpanStyle(color = AccentGreen, fontSize = 13.sp, fontWeight = FontWeight.Bold)) {
-                                    append("Sign Up")
-                                }
-                            },
-                            modifier = Modifier.clickable { isSignIn = false }
-                        )
-                    }
+                    Text(
+                        text = "Forgot Password?",
+                        color = TextSecondary, fontSize = 13.sp,
+                        modifier = Modifier.clickable { }
+                    )
                 } else {
-                    // Sign Up footer
                     Text(
                         text = buildAnnotatedString {
                             withStyle(SpanStyle(color = TextSecondary, fontSize = 13.sp)) {
@@ -268,51 +334,100 @@ fun AuthScreen(
     }
 }
 
+// ── Date of Birth field ────────────────────────────────────────────────────────
+// ⑧ Read-only tappable field — user can't type a date manually
+@Composable
+private fun DateOfBirthField(
+    value: Date?,  // Changed from String to Date?
+    hasError: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor = if (hasError) AccentRed else CardBorder
+    val dateString = value?.let { formatDate(it) } ?: ""  // Format the date
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(CardDark)
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.DateRange,
+            contentDescription = null,
+            tint = if (hasError) AccentRed else TextSecondary,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = if (dateString.isEmpty()) "Date of Birth (DD/MM/YYYY)" else dateString,
+            color = if (dateString.isEmpty()) TextSecondary else TextPrimary,
+            fontSize = 14.sp,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            imageVector = Icons.Default.ArrowDropDown,
+            contentDescription = null,
+            tint = TextSecondary,
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+// Helper function to format Date to string
+private fun formatDate(date: Date): String {
+    val format = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+    return format.format(date)
+}
+private fun formatDateForApi(date: Date): String {
+    // Format: 2001-03-16 (ISO date format)
+    val format = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+    return format.format(date)
+}
+
+// ── Reusable error banner ──────────────────────────────────────────────────────
+@Composable
+private fun ErrorBanner(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(AccentRed.copy(alpha = 0.12f))
+            .border(1.dp, AccentRed.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Text(text = message, color = AccentRed, fontSize = 13.sp)
+    }
+}
+
 // ── App Logo ───────────────────────────────────────────────────────────────────
 @Composable
 private fun AppLogo() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Icon circle
         Box(
             modifier = Modifier
                 .size(64.dp)
                 .clip(RoundedCornerShape(18.dp))
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(Color(0xFF1A1A2E), Color(0xFF16213E))
-                    )
-                )
+                .background(Brush.linearGradient(colors = listOf(Color(0xFF1A1A2E), Color(0xFF16213E))))
                 .border(1.5.dp, AccentRed.copy(alpha = 0.6f), RoundedCornerShape(18.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(text = "🎬", fontSize = 30.sp)
         }
-
         Spacer(modifier = Modifier.height(10.dp))
-
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Cine",
-                color = TextPrimary,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Text(
-                text = "Pulse",
-                color = AccentRed,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
+            Text(text = "Cine", color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            Text(text = "Pulse", color = AccentRed, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
         }
-        Text(
-            text = "Your cinematic companion",
-            color = TextSecondary,
-            fontSize = 11.sp
-        )
+        Text(text = "Your cinematic companion", color = TextSecondary, fontSize = 11.sp)
     }
 }
 
-// ── Mode toggle ────────────────────────────────────────────────────────────────
+// ── Mode Toggle ────────────────────────────────────────────────────────────────
 @Composable
 private fun ModeToggle(isSignIn: Boolean, onToggle: (Boolean) -> Unit) {
     Box(
@@ -351,7 +466,7 @@ private fun ModeToggle(isSignIn: Boolean, onToggle: (Boolean) -> Unit) {
     }
 }
 
-// ── Input field ────────────────────────────────────────────────────────────────
+// ── Auth Input Field ───────────────────────────────────────────────────────────
 @Composable
 private fun AuthInputField(
     value: String,
@@ -377,16 +492,9 @@ private fun AuthInputField(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = TextSecondary,
-            modifier = Modifier.size(18.dp)
-        )
-
+        Icon(imageVector = icon, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
         BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
+            value = value, onValueChange = onValueChange,
             modifier = Modifier.weight(1f),
             textStyle = TextStyle(color = TextPrimary, fontSize = 14.sp),
             singleLine = true,
@@ -394,28 +502,16 @@ private fun AuthInputField(
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             cursorBrush = SolidColor(AccentBlue),
             decorationBox = { inner ->
-                if (value.isEmpty()) {
-                    Text(text = placeholder, color = TextSecondary, fontSize = 14.sp)
-                }
+                if (value.isEmpty()) Text(text = placeholder, color = TextSecondary, fontSize = 14.sp)
                 inner()
             }
         )
-
         if (isPassword && onToggleVisibility != null) {
             Icon(
                 imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                contentDescription = "Toggle password",
-                tint = TextSecondary,
-                modifier = Modifier
-                    .size(18.dp)
-                    .clickable { onToggleVisibility() }
+                contentDescription = "Toggle password", tint = TextSecondary,
+                modifier = Modifier.size(18.dp).clickable { onToggleVisibility() }
             )
         }
     }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF080C14)
-@Composable
-fun AuthScreenPreview() {
-    AuthScreen()
 }

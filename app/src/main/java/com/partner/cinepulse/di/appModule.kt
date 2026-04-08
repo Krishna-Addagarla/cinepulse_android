@@ -1,5 +1,6 @@
 package com.partner.cinepulse.di
 
+import com.partner.cinepulse.data.remote.apis.authApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,10 +26,14 @@ object appModule{
     @Provides
     @Singleton
     fun getRetrofit(okHttpClient: OkHttpClient): Retrofit =
-        Retrofit.Builder().baseUrl("")
+        Retrofit.Builder()
+            .baseUrl("https://cinepulse-backend-7teu.onrender.com")
             .addConverterFactory(GsonConverterFactory.create())
             .client(okHttpClient)
             .build()
 
-
+    @Provides
+    @Singleton
+    fun getAuthAPI(retrofit: Retrofit): authApiService =
+        retrofit.create(authApiService::class.java)
 }
