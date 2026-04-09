@@ -17,14 +17,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.partner.cinepulse.data.repository.TokenRepository
 import com.partner.cinepulse.navigation.AppNavigation
 import com.partner.cinepulse.navigation.BottomNavigation
 import com.partner.cinepulse.navigation.Screen
 import com.partner.cinepulse.ui.theme.CinePulseTheme
 import dagger.hilt.android.AndroidEntryPoint
+import jakarta.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var tokenRepository: TokenRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -40,7 +45,7 @@ class MainActivity : ComponentActivity() {
                 val currentRoute = navBackStackEntry?.destination?.route
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    AppNavigation(navController = navController)
+                    AppNavigation(navController = navController,tokenRepository)
 
                     // Bottom nav floats above content
                     if (currentRoute in listOf(

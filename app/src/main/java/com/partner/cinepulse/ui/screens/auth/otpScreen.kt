@@ -46,7 +46,7 @@ private const val RESEND_COUNTDOWN_SECONDS = 60
 
 @Composable
 fun OtpVerificationScreen(
-    email: String,                          // passed from previous screen
+    email: String,
     onVerificationSuccess: () -> Unit = {},
     onNavigateBack: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()

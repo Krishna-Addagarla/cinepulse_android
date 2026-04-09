@@ -1,12 +1,14 @@
 package com.partner.cinepulse.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
 import com.partner.cinepulse.data.remote.models.loginRequest
 import com.partner.cinepulse.data.remote.models.otpVerificationRequest
 import com.partner.cinepulse.data.remote.models.registrationRequest
 import com.partner.cinepulse.data.remote.models.verifyResponse
 import com.partner.cinepulse.data.repository.AuthRepository
+import com.partner.cinepulse.data.repository.TokenRepository
 import com.partner.cinepulse.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +38,8 @@ data class AuthUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val tokenRepository: TokenRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -72,6 +75,10 @@ class AuthViewModel @Inject constructor(
                         it.copy(isLoading = true, errorMessage = null)
                     }
                     is Resource.Success -> _uiState.update {
+
+                        result.data.let { data ->
+                            tokenRepository.saveTokens(data.access_token,data.refresh_token)
+                        }
                         it.copy(isLoading = false, verifyResponse = result.data)
                     }
                     is Resource.Error -> _uiState.update {
@@ -92,6 +99,11 @@ class AuthViewModel @Inject constructor(
                         it.copy(isLoading = true, errorMessage = null)
                     }
                     is Resource.Success -> _uiState.update {
+
+                        result.data.let { data ->
+                            tokenRepository.saveTokens(data.access_token,data.refresh_token)
+                        }
+
                         it.copy(isLoading = false, verifyResponse = result.data)
                     }
                     is Resource.Error -> _uiState.update {
