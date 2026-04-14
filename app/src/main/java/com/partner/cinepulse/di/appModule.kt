@@ -1,6 +1,7 @@
 package com.partner.cinepulse.di
 
 import com.partner.cinepulse.data.remote.apis.authApiService
+import com.partner.cinepulse.data.remote.apis.contentApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,4 +37,9 @@ object appModule{
     @Singleton
     fun getAuthAPI(retrofit: Retrofit): authApiService =
         retrofit.create(authApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun getContentAPI(retrofit: Retrofit) : contentApiService =
+        retrofit.create(contentApiService::class.java)
 }

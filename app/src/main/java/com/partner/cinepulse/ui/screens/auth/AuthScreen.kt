@@ -318,7 +318,10 @@ private fun formatDateForApi(date: Date): String = java.text.SimpleDateFormat("y
 
 @Composable
 private fun ErrorBanner(message: String) {
-    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(AccentRed.copy(alpha = 0.12f)).border(1.dp, AccentRed.copy(alpha = 0.4f), RoundedCornerShape(10.dp)).padding(14.dp)) {
+    Box(modifier = Modifier
+        .fillMaxWidth().clip(RoundedCornerShape(10.dp))
+        .background(AccentRed.copy(alpha = 0.12f))
+        .border(1.dp, AccentRed.copy(alpha = 0.4f), RoundedCornerShape(10.dp)).padding(14.dp)) {
         Text(text = message, color = AccentRed, fontSize = 13.sp)
     }
 }
@@ -339,7 +342,10 @@ private fun AppLogo() {
 
 @Composable
 private fun ModeToggle(isSignIn: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(CardDark).border(1.dp, CardBorder, RoundedCornerShape(12.dp)).padding(4.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+        .background(CardDark)
+        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+        .padding(4.dp)) {
         listOf(true to "Sign In", false to "Sign Up").forEach { (mode, label) ->
             Box(
                 modifier = Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(9.dp))
