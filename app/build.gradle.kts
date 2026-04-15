@@ -90,4 +90,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
+    // Coil for Jetpack Compose
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    // Networking library (required for loading images from URLs)
+//    implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
+
 }

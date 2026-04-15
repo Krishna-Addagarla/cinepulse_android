@@ -13,7 +13,7 @@ data class searchItem(
     val name : String,
     val photo_url : String,
     val type : String,
-    val subtitle : String,
+    val subtitle : String?,
     val rating : Double,
     val match_score : Double
 )
@@ -99,7 +99,7 @@ data class reviewResponse(
     val id: Int,
     val user_id: Int,
     val user_name: String,
-    val created_at: DateTime,
+    val created_at: String,
     val performance_ratings: List<performanceRating>
 )
 

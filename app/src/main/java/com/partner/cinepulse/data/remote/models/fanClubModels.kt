@@ -28,8 +28,8 @@ data class createFanClubResponse(
     val isAdmin: Boolean,
     val hasPendingRequest: Boolean,
     val createdAt: String,  // or Date type if you parse it
-    val linkedActor: LinkedEntity,      // Define separate data class
-    val linkedMovie: LinkedEntity,      // Define separate data class
-    val linkedTvShow: LinkedEntity,     // Define separate data class
-    val linkedCrew: LinkedEntity        // Define separate data class
+    val linkedActor: List<Int>,
+    val linkedMovie: List<Int>,
+    val linkedTvShow: List<Int>,
+    val linkedCrew: List<Int>
 )
