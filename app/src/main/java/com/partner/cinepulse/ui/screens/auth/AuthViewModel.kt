@@ -1,7 +1,6 @@
 package com.partner.cinepulse.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
 import com.partner.cinepulse.data.remote.models.loginRequest
 import com.partner.cinepulse.data.remote.models.otpVerificationRequest

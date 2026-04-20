@@ -1,4 +1,4 @@
-package com.partner.cinepulse.ui.screens.discussion
+package com.partner.cinepulse.ui.screens.fanclub
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

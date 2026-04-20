@@ -1,7 +1,5 @@
 package com.partner.cinepulse.navigation
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,7 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -19,7 +16,7 @@ import com.partner.cinepulse.data.repository.TokenRepository
 import com.partner.cinepulse.ui.screens.auth.AuthScreen
 import com.partner.cinepulse.ui.screens.auth.OtpVerificationScreen
 import com.partner.cinepulse.ui.screens.chatbot.ChatbotScreen
-import com.partner.cinepulse.ui.screens.discussion.DiscussionsScreen
+import com.partner.cinepulse.ui.screens.fanclub.DiscussionsScreen
 import com.partner.cinepulse.ui.screens.home.HomeScreen
 import com.partner.cinepulse.ui.screens.reviews.ReviewsScreen
 import com.partner.cinepulse.ui.screens.search.SearchScreen

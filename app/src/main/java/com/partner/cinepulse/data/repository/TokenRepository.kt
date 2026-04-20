@@ -27,6 +27,8 @@ class TokenRepository @Inject constructor(
     // Get just the access token (one-time)
     suspend fun getAccessToken(): String? = tokenDao.getAccessToken()
 
+    suspend fun getRefreshToken(): String? = tokenDao.getRefreshToken()
+
     // Observe access token changes (for real-time UI updates)
     fun observeAccessToken(): Flow<String?> = tokenDao.getAccessTokenFlow()
 
@@ -34,7 +36,8 @@ class TokenRepository @Inject constructor(
     suspend fun isLoggedIn(): Boolean = tokenDao.isLoggedIn()
 
     // Clear all tokens
-    suspend fun logout() {
+    suspend fun clearTokens
+                () {
         tokenDao.clearTokens()
     }
 }

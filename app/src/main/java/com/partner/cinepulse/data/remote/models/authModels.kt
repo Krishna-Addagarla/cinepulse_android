@@ -32,3 +32,8 @@ data class verifyResponse(
 data class resendResponse(
     val message : String
 )
+
+data class refreshRequest(
+    val refresh_token : String
+)
+
