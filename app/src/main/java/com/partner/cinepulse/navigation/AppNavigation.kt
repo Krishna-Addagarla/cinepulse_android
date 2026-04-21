@@ -20,6 +20,7 @@ import com.partner.cinepulse.ui.screens.fanclub.DiscussionsScreen
 import com.partner.cinepulse.ui.screens.home.HomeScreen
 import com.partner.cinepulse.ui.screens.reviews.ReviewsScreen
 import com.partner.cinepulse.ui.screens.search.SearchScreen
+import com.partner.cinepulse.ui.screens.userInfo.UserInfoScreen
 
 @Composable
 fun AppNavigation(
@@ -80,6 +81,9 @@ fun AppNavigation(
                     },
                     onNavigateToChatbot = {
                         navController.navigate(Screen.Chatbot.route)
+                    },
+                    onProfileClick = {
+                        navController.navigate(Screen.Profile.route)
                     }
                 )
             }
@@ -111,6 +115,15 @@ fun AppNavigation(
             composable(Screen.Chatbot.route) {
                 ChatbotScreen(
                     onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable (Screen.Profile.route){
+                UserInfoScreen(
+                    onLogout = {},
+                    onBackClick = {
                         navController.popBackStack()
                     }
                 )

@@ -87,7 +87,8 @@ fun HomeScreen(
     onNavigateToSearch: () -> Unit,
     onNavigateToReviews: () -> Unit,
     onNavigateToDiscussions: () -> Unit,
-    onNavigateToChatbot: () -> Unit
+    onNavigateToChatbot: () -> Unit,
+    onProfileClick : () -> Unit
 ) {
     val trendingPeople = listOf(
         TrendingPerson("Nolan",    listOf(Color(0xFFB05C1A), Color(0xFF6B3A10))),
@@ -132,7 +133,9 @@ fun HomeScreen(
             .fillMaxSize()
             .background(BgDark)
     ) {
-        TopBar()
+        TopBar(
+            onProfileClick = onProfileClick
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -491,6 +494,7 @@ fun HomeScreenPreview() {
         onNavigateToSearch = {},
         onNavigateToChatbot = {},
         onNavigateToReviews = {},
-        onNavigateToDiscussions = {}
+        onNavigateToDiscussions = {},
+        onProfileClick = {}
     )
 }

@@ -16,11 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Whatshot
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,13 +26,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.partner.cinepulse.data.remote.models.FanClubResponse
 import com.partner.cinepulse.ui.components.TopBar
 import com.partner.cinepulse.ui.theme.AccentBlue
 import com.partner.cinepulse.ui.theme.BgDark
@@ -46,30 +45,7 @@ import com.partner.cinepulse.ui.theme.DarkSlate
 import com.partner.cinepulse.ui.theme.TextPrimary
 import com.partner.cinepulse.ui.theme.TextSecondary
 
-// ── Colour tokens ──────────────────────────────────────────────────────────────
-//private val BgDark        = Color(0xFF080C14)
-//private val CardDark      = Color(0xFF0F1623)
-//private val CardBorder    = Color(0xFF1C2333)
-//private val AccentBlue    = Color(0xFF1A6BFF)
-//private val AccentRed     = Color(0xFFE50914)
-//private val AccentGreen   = Color(0xFF00C853)
-//private val TextPrimary   = Color(0xFFFFFFFF)
-//private val TextSecondary = Color(0xFF8A95A8)
-//private val TabSelected   = Color(0xFF1A6BFF)
-//private val TabUnselected = Color(0xFF141B27)
-
 // ── Data Models ────────────────────────────────────────────────────────────────
-data class Group(
-    val id: String,
-    val name: String,
-    val emoji: String,
-    val gradientColors: List<Color>,
-    val memberCount: Int,
-    val latestDiscussion: String,
-    val timeAgo: String,
-    val unreadCount: Int = 0,
-    val isHot: Boolean = false
-)
 
 data class TrendingDiscussion(
     val id: String,
@@ -80,32 +56,154 @@ data class TrendingDiscussion(
     val timeAgo: String
 )
 
-// ── Sample Data ────────────────────────────────────────────────────────────────
-val myGroups = listOf(
-    Group("1", "Nolan Universe",            "🔥", listOf(Color(0xFFB05C1A), Color(0xFF6B3A10)), 45200, "New discussion on Tenet's timeline",  "5m ago",  unreadCount = 3, isHot = true),
-    Group("2", "Sci-Fi Cinema Club",        "🎬", listOf(Color(0xFF1A237E), Color(0xFF283593)), 32800, "Blade Runner 2049 vs Original...",      "1h ago"),
-    Group("3", "A24 Film Lovers",           "🎭", listOf(Color(0xFF880E4F), Color(0xFF4A148C)), 28500, "Everything Everywhere reactions",        "2h ago",  unreadCount = 7),
-    Group("4", "Classic Cinema Discussions","🎥", listOf(Color(0xFF1B5E20), Color(0xFF2E7D32)), 19300, "Criterion Collection favorites",         "5h ago"),
+// ── Sample / Static Data ───────────────────────────────────────────────────────
+
+private val sampleTrendingDiscussions = listOf(
+    TrendingDiscussion("1", "What makes Villeneuve's cinematography so unique?", "Visual Storytelling", 234, 1200f, "3h ago"),
+    TrendingDiscussion("2", "Unpopular opinion: Inception is overrated",          "Hot Takes",          567,  890f, "5h ago"),
+    TrendingDiscussion("3", "Best movie soundtracks of 2024",                     "Film Music",         189,  543f, "1d ago"),
 )
 
-val suggestedGroups = listOf(
-    Group("5", "Horror Film Enthusiasts",   "👻", listOf(Color(0xFF4A148C), Color(0xFF311B92)), 23400, "Best horror films of the decade",        "15m ago"),
-    Group("6", "Marvel Cinematic Universe", "🦸", listOf(Color(0xFFB71C1C), Color(0xFF880E4F)), 89300, "Endgame alternate endings discussion",   "10m ago", isHot = true),
-    Group("7", "International Cinema",      "🌍", listOf(Color(0xFF006064), Color(0xFF00695C)), 45200, "Parasite vs. Oldboy - Korean cinema",    "25m ago"),
+private val sampleSuggestedGroups = listOf(
+    FanClubResponse(
+        id = 1L,
+        name = "RamCharan Fan Club",
+        description = "Group for Ram Charan fans",
+        photo_url = "https://example.com/ramcharan.jpg",
+        cover_url = "",
+        members_count = 12000,
+        posts_count = 230,
+        is_private = false,
+        is_member = true,
+        is_admin = true,
+        created_at = "2026-04-20T06:22:07.177776Z",
+        created_by = 1L,
+        creator_name = "Admin",
+        has_pending_request = false,
+        linked_actor = null,
+        linked_movie = null,
+        linked_tvshow = null,
+        linked_crew = null
+    ),
+    FanClubResponse(
+        id = 2L,
+        name = "Horror Film Enthusiasts",
+        description = "Best horror films of the decade",
+        photo_url = "https://example.com/horror.jpg",
+        cover_url = "",
+        members_count = 23400,
+        posts_count = 540,
+        is_private = false,
+        is_member = false,
+        is_admin = false,
+        created_at = "2026-04-20T06:22:07.177776Z",
+        created_by = 2L,
+        creator_name = "Admin",
+        has_pending_request = false,
+        linked_actor = null,
+        linked_movie = null,
+        linked_tvshow = null,
+        linked_crew = null
+    ),
+    FanClubResponse(
+        id = 3L,
+        name = "Marvel Cinematic Universe",
+        description = "Endgame alternate endings discussion",
+        photo_url = "https://example.com/marvel.jpg",
+        cover_url = "",
+        members_count = 89300,
+        posts_count = 1200,
+        is_private = false,
+        is_member = true,
+        is_admin = false,
+        created_at = "2026-04-20T06:22:07.177776Z",
+        created_by = 3L,
+        creator_name = "Admin",
+        has_pending_request = false,
+        linked_actor = null,
+        linked_movie = null,
+        linked_tvshow = null,
+        linked_crew = null
+    ),
+    FanClubResponse(
+        id = 4L,
+        name = "International Cinema",
+        description = "Parasite vs. Oldboy - Korean cinema",
+        photo_url = "https://example.com/international.jpg",
+        cover_url = "",
+        members_count = 45200,
+        posts_count = 800,
+        is_private = false,
+        is_member = false,
+        is_admin = false,
+        created_at = "2026-04-20T07:25:00Z",
+        created_by = 4L,
+        creator_name = "Admin",
+        has_pending_request = false,
+        linked_actor = null,
+        linked_movie = null,
+        linked_tvshow = null,
+        linked_crew = null
+    ),
+    FanClubResponse(
+        id = 5L,
+        name = "Tollywood Superstars",
+        description = "All about Telugu cinema stars",
+        photo_url = "https://example.com/tollywood.jpg",
+        cover_url = "",
+        members_count = 67000,
+        posts_count = 950,
+        is_private = false,
+        is_member = true,
+        is_admin = false,
+        created_at = "2026-04-20T08:00:00Z",
+        created_by = 5L,
+        creator_name = "Admin",
+        has_pending_request = false,
+        linked_actor = null,
+        linked_movie = null,
+        linked_tvshow = null,
+        linked_crew = null
+    )
 )
 
-val trendingDiscussions = listOf(
-    TrendingDiscussion("1", "What makes Villeneuve's cinematography so unique?", "Visual Storytelling", 234, 1.2f, "3h ago"),
-    TrendingDiscussion("2", "Unpopular opinion: Inception is overrated",          "Hot Takes",           567, 890f, "5h ago"),
-    TrendingDiscussion("3", "Best movie soundtracks of 2024",                     "Film Music",          189, 543f, "1d ago"),
-)
+// ── Stateful Screen (NOT previewable — uses hiltViewModel) ────────────────────
 
-// ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun DiscussionsScreen(
     onNavigateBack: () -> Unit,
-    onGroupClick: (String) -> Unit = {},
+    onGroupClick: (Long) -> Unit = {},       // FIX: Long, matching FanClubResponse.id
     onDiscussionClick: (String) -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    viewModel: FanClubViewModel = hiltViewModel()
+) {
+    val userFanClubs by viewModel.userFanClubs.collectAsStateWithLifecycle()
+
+    DiscussionsScreenContent(
+        userFanClubs = userFanClubs,
+        suggestedGroups = sampleSuggestedGroups,
+        trendingDiscussions = sampleTrendingDiscussions,
+        onGroupClick = onGroupClick,
+        onDiscussionClick = onDiscussionClick,
+        onNavigateBack = onNavigateBack,
+        onSearchClick = onSearchClick,
+        onNotificationClick = onNotificationClick,
+        onProfileClick = onProfileClick
+    )
+}
+
+// ── Stateless Content (previewable) ───────────────────────────────────────────
+
+@Composable
+fun DiscussionsScreenContent(
+    userFanClubs: List<FanClubResponse>,
+    suggestedGroups: List<FanClubResponse>,
+    trendingDiscussions: List<TrendingDiscussion>,
+    onGroupClick: (Long) -> Unit,            // FIX: Long
+    onDiscussionClick: (String) -> Unit,
+    onNavigateBack: () -> Unit,
     onSearchClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
@@ -131,8 +229,7 @@ fun DiscussionsScreen(
 
         // ── Tab row ───────────────────────────────────────────────────────────
         Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             listOf("My Groups", "Discover").forEachIndexed { index, label ->
@@ -159,90 +256,116 @@ fun DiscussionsScreen(
         }
 
         when (selectedTab) {
-            0 -> MyGroupsContent(onGroupClick = onGroupClick, onDiscussionClick = onDiscussionClick)
-            1 -> DiscoverContent(onGroupClick = onGroupClick, onDiscussionClick = onDiscussionClick)
+            0 -> MyGroupsContent(
+                userFanClubs = userFanClubs,
+                suggestedGroups = suggestedGroups,
+                trendingDiscussions = trendingDiscussions,
+                onGroupClick = onGroupClick,
+                onDiscussionClick = onDiscussionClick
+            )
+            1 -> DiscoverContent(
+                suggestedGroups = suggestedGroups,
+                trendingDiscussions = trendingDiscussions,
+                onGroupClick = onGroupClick,
+                onDiscussionClick = onDiscussionClick
+            )
         }
     }
 }
 
 // ── My Groups Tab ──────────────────────────────────────────────────────────────
+
 @Composable
 private fun MyGroupsContent(
-    onGroupClick: (String) -> Unit,
+    userFanClubs: List<FanClubResponse>,
+    suggestedGroups: List<FanClubResponse>,
+    trendingDiscussions: List<TrendingDiscussion>,
+    onGroupClick: (Long) -> Unit,            // FIX: Long
     onDiscussionClick: (String) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues( start = 16.dp,
-            end = 16.dp,
-            bottom = 80.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        item {
-            Text(
-                text = "My Groups (${myGroups.size})",
-                color = TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-        }
-
-        items(myGroups) { group ->
-            GroupCard(group = group, showJoin = false, onClick = { onGroupClick(group.id) })
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(text = "📈", fontSize = 15.sp)
+    if (userFanClubs.isNotEmpty()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            item {
                 Text(
-                    text = "Trending Discussions",
+                    text = "My Groups (${userFanClubs.size})",
                     color = TextPrimary,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
 
-        items(trendingDiscussions) { discussion ->
-            TrendingDiscussionCard(discussion = discussion, onClick = { onDiscussionClick(discussion.id) })
-        }
+            items(userFanClubs, key = { it.id }) { group ->
+                GroupCard(
+                    group = group,
+                    showJoin = false,
+                    onClick = { onGroupClick(group.id) }   // FIX: group.id is Long, matches
+                )
+            }
 
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Suggested Groups",
-                color = TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(text = "📈", fontSize = 15.sp)
+                    Text(
+                        text = "Trending Discussions",
+                        color = TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-        items(suggestedGroups) { group ->
-            GroupCard(group = group, showJoin = true, onClick = { onGroupClick(group.id) })
+            items(trendingDiscussions, key = { it.id }) { discussion ->
+                TrendingDiscussionCard(
+                    discussion = discussion,
+                    onClick = { onDiscussionClick(discussion.id) }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Suggested Groups",
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            items(suggestedGroups, key = { "suggested_${it.id}" }) { group ->
+                GroupCard(
+                    group = group,
+                    showJoin = true,
+                    onClick = { onGroupClick(group.id) }   // FIX: group.id is Long, matches
+                )
+            }
         }
     }
 }
 
 // ── Discover Tab ───────────────────────────────────────────────────────────────
+
 @Composable
 private fun DiscoverContent(
-    onGroupClick: (String) -> Unit,
+    suggestedGroups: List<FanClubResponse>,
+    trendingDiscussions: List<TrendingDiscussion>,
+    onGroupClick: (Long) -> Unit,            // FIX: Long
     onDiscussionClick: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            bottom = 80.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
@@ -255,8 +378,12 @@ private fun DiscoverContent(
             )
         }
 
-        items(suggestedGroups) { group ->
-            GroupCard(group = group, showJoin = true, onClick = { onGroupClick(group.id) })
+        items(suggestedGroups, key = { it.id }) { group ->
+            GroupCard(
+                group = group,
+                showJoin = true,
+                onClick = { onGroupClick(group.id) }       // FIX: group.id is Long, matches
+            )
         }
 
         item {
@@ -276,15 +403,23 @@ private fun DiscoverContent(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        items(trendingDiscussions) { discussion ->
-            TrendingDiscussionCard(discussion = discussion, onClick = { onDiscussionClick(discussion.id) })
+        items(trendingDiscussions, key = { it.id }) { discussion ->
+            TrendingDiscussionCard(
+                discussion = discussion,
+                onClick = { onDiscussionClick(discussion.id) }
+            )
         }
     }
 }
 
 // ── Group Card ─────────────────────────────────────────────────────────────────
+
 @Composable
-private fun GroupCard(group: Group, showJoin: Boolean, onClick: () -> Unit) {
+private fun GroupCard(
+    group: FanClubResponse,
+    showJoin: Boolean,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,58 +436,52 @@ private fun GroupCard(group: Group, showJoin: Boolean, onClick: () -> Unit) {
             modifier = Modifier
                 .size(52.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.linearGradient(group.gradientColors))
                 .border(1.dp, CardBorder, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = group.emoji, fontSize = 22.sp)
+            AsyncImage(
+                model = group.photo_url,
+                contentDescription = group.name
+            )
         }
 
         // Info
         Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = group.name,
-                    color = TextPrimary,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f, fill = false),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (group.isHot) {
-                    Icon(Icons.Default.Whatshot, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(16.dp))
-                }
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = "👥", fontSize = 11.sp)
-                Text(text = "${formatMemberCount(group.memberCount)} members", color = TextSecondary, fontSize = 12.sp)
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
+            Text(
+                text = group.name,
+                color = TextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.fillMaxWidth(),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(text = "💬", fontSize = 11.sp)
+                Text(text = "👥", fontSize = 11.sp)
                 Text(
-                    text = group.latestDiscussion,
+                    text = "${formatMemberCount(group.members_count)} members",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            if (!group.description.isNullOrBlank()) {
+                Text(
+                    text = group.description,
                     color = TextSecondary,
                     fontSize = 12.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = group.timeAgo, color = TextSecondary.copy(alpha = 0.6f), fontSize = 11.sp)
         }
 
-        // Right side: either unread badge OR join button
+        // Right side: join button or nothing
         if (showJoin) {
             Box(
                 modifier = Modifier
@@ -361,25 +490,24 @@ private fun GroupCard(group: Group, showJoin: Boolean, onClick: () -> Unit) {
                     .clickable { }
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                Text(text = "Join", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-        } else if (group.unreadCount > 0) {
-            Box(
-                modifier = Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(AccentBlue),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "${group.unreadCount}", color = TextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (group.is_member) "Joined" else "Join",
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
 }
 
 // ── Trending Discussion Card ───────────────────────────────────────────────────
+
 @Composable
-private fun TrendingDiscussionCard(discussion: TrendingDiscussion, onClick: () -> Unit) {
+private fun TrendingDiscussionCard(
+    discussion: TrendingDiscussion,
+    onClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -414,9 +542,16 @@ private fun TrendingDiscussionCard(discussion: TrendingDiscussion, onClick: () -
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "${discussion.replyCount} replies", color = TextSecondary, fontSize = 12.sp)
+                Text(
+                    text = "${discussion.replyCount} replies",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
                 Text(text = "•", color = TextSecondary, fontSize = 12.sp)
-                val likesText = if (discussion.likeCount >= 1000) "${discussion.likeCount / 1000}K" else "${discussion.likeCount.toInt()}"
+                val likesText = if (discussion.likeCount >= 1000f)
+                    "${"%.1f".format(discussion.likeCount / 1000f)}K"
+                else
+                    "${discussion.likeCount.toInt()}"
                 Text(text = "$likesText likes", color = TextSecondary, fontSize = 12.sp)
             }
         }
@@ -424,14 +559,37 @@ private fun TrendingDiscussionCard(discussion: TrendingDiscussion, onClick: () -
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
 fun formatMemberCount(count: Int): String = when {
     count >= 1_000_000 -> "${count / 1_000_000}M"
     count >= 1_000     -> "${count / 1_000}K"
     else               -> count.toString()
 }
 
+// ── Previews ──────────────────────────────────────────────────────────────────
+
 @Preview(showBackground = true, backgroundColor = 0xFF080C14)
 @Composable
-fun DiscussionsScreenPreview() {
-    DiscussionsScreen(onNavigateBack = {})
+fun DiscussionsScreenMyGroupsPreview() {
+    DiscussionsScreenContent(
+        userFanClubs = sampleSuggestedGroups.take(2),
+        suggestedGroups = sampleSuggestedGroups,
+        trendingDiscussions = sampleTrendingDiscussions,
+        onGroupClick = {},
+        onDiscussionClick = {},
+        onNavigateBack = {}
+    )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF080C14)
+@Composable
+fun DiscussionsScreenEmptyGroupsPreview() {
+    DiscussionsScreenContent(
+        userFanClubs = emptyList(),
+        suggestedGroups = sampleSuggestedGroups,
+        trendingDiscussions = sampleTrendingDiscussions,
+        onGroupClick = {},
+        onDiscussionClick = {},
+        onNavigateBack = {}
+    )
 }

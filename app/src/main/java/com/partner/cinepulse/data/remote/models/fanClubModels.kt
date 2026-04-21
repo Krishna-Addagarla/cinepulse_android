@@ -1,7 +1,5 @@
 package com.partner.cinepulse.data.remote.models
 
-import java.time.OffsetDateTime
-
 
 data class createFanClub(
     val name: String,
@@ -39,20 +37,20 @@ data class createFanClubResponse(
 data class FanClubResponse(
     val name: String,
     val description: String,
-    val photoUrl: String,
-    val coverUrl: String,
-    val isPrivate: Boolean,
+    val photo_url: String,
+    val cover_url: String,
+    val is_private: Boolean,
     val id: Long,
-    val createdBy: Long,
-    val creatorName: String,
-    val membersCount: Int,
-    val postsCount: Int,
-    val isMember: Boolean,
-    val isAdmin: Boolean,
-    val hasPendingRequest: Boolean,
-    val createdAt: OffsetDateTime,
-    val linkedActor: Any? = null,
-    val linkedMovie: Any? = null,
-    val linkedTvshow: Any? = null,
-    val linkedCrew: Any? = null
+    val created_by: Long,
+    val creator_name: String,
+    val members_count: Int,
+    val posts_count: Int,
+    val is_member: Boolean,
+    val is_admin: Boolean,
+    val has_pending_request: Boolean,
+    val created_at: String,
+    val linked_actor: Any? = null,
+    val linked_movie: Any? = null,
+    val linked_tvshow: Any? = null,
+    val linked_crew: Any? = null
 )

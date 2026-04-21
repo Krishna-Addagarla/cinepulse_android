@@ -79,7 +79,6 @@ object appModule {
             .addConverterFactory(GsonConverterFactory.create())
             .client(okHttpClient)
             .build()
-git
     // ===== MAIN API SERVICES =====
     @Provides
     @Singleton

@@ -7,8 +7,8 @@ import retrofit2.http.Path
 
 interface fanClubApiService {
 
-    @GET("fanclubs//user/joined")
-    suspend fun getFanClubs(): Response<List<FanClubResponse>>
+    @GET("fanclubs/user/joined")
+    suspend fun getUserFanClubs(): Response<List<FanClubResponse>>
 
     @GET("fanclubs/{fanclub_id}")
     suspend fun getFanClub(

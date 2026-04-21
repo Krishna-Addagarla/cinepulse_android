@@ -13,4 +13,5 @@ sealed class Screen(val route: String) {
     object Reviews : Screen("reviews")
     object Discussions : Screen("discussions")
     object Chatbot : Screen("chatbot")
+    object Profile : Screen("profile")
 }

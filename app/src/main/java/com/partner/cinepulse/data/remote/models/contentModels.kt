@@ -14,7 +14,7 @@ data class searchItem(
     val photo_url : String,
     val type : String,
     val subtitle : String?,
-    val rating : Double,
+    val rating : Double=0.0,
     val match_score : Double
 )
 

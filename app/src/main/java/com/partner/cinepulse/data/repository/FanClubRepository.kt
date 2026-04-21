@@ -6,5 +6,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface FanClubRepository {
 
-    suspend fun getFanClubs () : Flow<Resource<List<FanClubResponse>>>
+    suspend fun getUserFanClubs () : Flow<Resource<List<FanClubResponse>>>
 }

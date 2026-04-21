@@ -313,7 +313,7 @@ private fun SearchResultsPanel(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(searchResponse.results, key = { it.id }) { item ->
+                    items(searchResponse.results, key = { "${it.id}_${it.type}" }) { item ->
                         SearchResultCard(item = item)
                     }
                 }
