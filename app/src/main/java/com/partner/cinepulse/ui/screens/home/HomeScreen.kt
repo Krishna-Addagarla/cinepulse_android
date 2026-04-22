@@ -232,8 +232,8 @@ private fun HeroBanner() {
                 .padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            HeroBadge(text = "TRENDING NOW", color = AccentBlue)
-            HeroBadge(text = "NEW RELEASE",  color = AccentBlue)
+            HeroBadge(text = "TRENDING NOW", color = AccentBlue, onClick = {})
+            HeroBadge(text = "NEW RELEASE",  color = AccentBlue, onClick = {})
         }
 
         // Bottom info
@@ -273,12 +273,13 @@ private fun HeroBanner() {
 }
 
 @Composable
-private fun HeroBadge(text: String, color: Color) {
+private fun HeroBadge(text: String, color: Color,onClick : () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .border(1.dp, color, RoundedCornerShape(20.dp))
             .padding(horizontal = 10.dp, vertical = 4.dp)
+            .clickable{onClick()}
     ) {
         Text(text = text, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }

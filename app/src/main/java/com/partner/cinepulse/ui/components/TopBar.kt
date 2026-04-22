@@ -35,7 +35,8 @@ fun TopBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.Black)
-            .windowInsetsPadding(WindowInsets.statusBars)    ) {
+            .windowInsetsPadding(WindowInsets.statusBars)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

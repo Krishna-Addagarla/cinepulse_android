@@ -47,19 +47,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-// ── Colour tokens ──────────────────────────────────────────────────────────────
-private val BgDark        = Color(0xFF080C14)
-private val CardDark      = Color(0xFF0F1623)
-private val CardBorder    = Color(0xFF1C2333)
-private val ChipBorder    = Color(0xFF1E2A3A)
-private val DarkSlate     = Color(0xFF141B27)
-private val AccentBlue    = Color(0xFF1A6BFF)
-private val AccentGold    = Color(0xFFFFB300)
-private val AccentGreen   = Color(0xFF1DB954)
-private val AccentRed     = Color(0xFFE50914)
-private val TextPrimary   = Color(0xFFFFFFFF)
-private val TextSecondary = Color(0xFF8A95A8)
+import com.partner.cinepulse.ui.theme.AccentBlue
+import com.partner.cinepulse.ui.theme.AccentRed
+import com.partner.cinepulse.ui.theme.AccentGold
+import com.partner.cinepulse.ui.theme.AccentGreen
+import com.partner.cinepulse.ui.theme.BgDark
+import com.partner.cinepulse.ui.theme.CardBorder
+import com.partner.cinepulse.ui.theme.CardDark
+import com.partner.cinepulse.ui.theme.ChipBorder
+import com.partner.cinepulse.ui.theme.DarkSlate
+import com.partner.cinepulse.ui.theme.TextPrimary
+import com.partner.cinepulse.ui.theme.TextSecondary
 
 // ── Data models ────────────────────────────────────────────────────────────────
 data class CastMember(
