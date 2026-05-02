@@ -1,5 +1,7 @@
 package com.partner.cinepulse.ui.screens.home
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,12 +9,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,6 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.partner.cinepulse.data.remote.models.movieResponse
 import com.partner.cinepulse.ui.components.TopBar
 import com.partner.cinepulse.ui.theme.AccentBlue
 import com.partner.cinepulse.ui.theme.AccentGold
@@ -32,18 +44,13 @@ import com.partner.cinepulse.ui.theme.EmeraldGreen
 import com.partner.cinepulse.ui.theme.TextPrimary
 import com.partner.cinepulse.ui.theme.TextSecondary
 
-// ── Colour tokens ──────────────────────────────────────────────────────────────
-//private val BgDark        = Color(0xFF080C14)
-//private val CardDark      = Color(0xFF0F1623)
-//private val CardBorder    = Color(0xFF1C2333)
-//private val AccentRed     = Color(0xFFE50914)
-//private val AccentBlue    = Color(0xFF1A6BFF)
-//private val AccentGold    = Color(0xFFFFB300)
-//private val AccentGreen   = Color(0xFF00C853)
-//private val TextPrimary   = Color(0xFFFFFFFF)
-//private val TextSecondary = Color(0xFF8A95A8)
-
 // ── Data models ────────────────────────────────────────────────────────────────
+data class HeroMovie(
+    val title: String,
+    val meta: String,
+    val gradient: Brush
+)
+
 data class TrendingPerson(
     val name: String,
     val gradientColors: List<Color>
@@ -82,69 +89,133 @@ sealed class ActivityItem {
     ) : ActivityItem()
 }
 
+// ── Shared sample data ─────────────────────────────────────────────────────────
+private val sampleNewMovies = listOf(
+    HeroMovie(
+        title    = "ASTRAL ECHO",
+        meta     = "2026 • Sci-Fi Thriller • 148 min",
+        gradient = Brush.verticalGradient(listOf(Color(0xFF7B3F00), Color(0xFF1A0A00)))
+    ),
+    HeroMovie(
+        title    = "NOVA BREACH",
+        meta     = "2025 • Action • 132 min",
+        gradient = Brush.verticalGradient(listOf(Color(0xFF003F7B), Color(0xFF001A3A)))
+    ),
+    HeroMovie(
+        title    = "DARK MERIDIAN",
+        meta     = "2026 • Horror • 115 min",
+        gradient = Brush.verticalGradient(listOf(Color(0xFF3F007B), Color(0xFF1A0033)))
+    ),
+)
+
+private fun createSampleMovie(
+    name: String,
+    year: Int,
+    runtime: Int,
+    genre: String
+): movieResponse {
+    return movieResponse(
+        title = name,
+        photo_url = "",
+        plot = "Sample plot for $name",
+        release_date = "$year-01-01",
+        release_year = year,
+        runtime_minutes = runtime,
+        id = name.hashCode(),
+        overall_rating = 0,
+        total_ratings = 0,
+        genres = listOf(genre),
+        cast = emptyList(),
+        crew = emptyList(),
+        awards = emptyList()
+    )
+}
+
+private val sampleTrendingMovies = listOf(
+    createSampleMovie("ECHO", 2016, 148, "Sci-Fi"),
+    createSampleMovie("NOVA", 2026, 132, "Action"),
+    createSampleMovie("DARK MERIDIAN", 2026, 115, "Horror")
+)
+
+private val sampleTrendingPeople = listOf(
+    TrendingPerson("Nolan",    listOf(Color(0xFFB05C1A), Color(0xFF6B3A10))),
+    TrendingPerson("Zimmer",   listOf(Color(0xFF1A1A2E), Color(0xFF4158D0))),
+    TrendingPerson("Chastain", listOf(Color(0xFF2E7D32), Color(0xFF66BB6A))),
+    TrendingPerson("Murphy",   listOf(Color(0xFF1565C0), Color(0xFF42A5F5))),
+)
+
+private val sampleActivityFeed: List<ActivityItem> = listOf(
+    ActivityItem.ReviewActivity(
+        criticName  = "Jane D.",
+        criticEmoji = "💎",
+        badge       = "Diamond Critic",
+        badgeColor  = Color(0xFFFFB300),
+        timeAgo     = "2 hours ago",
+        rating      = 4.5f,
+        movieTitle  = "REVIEWS",
+        headline    = "Astral Echo is a masterpiece that redefines science fiction",
+        body        = "The cinematography alone is worth the price of admission. Denis Villeneuve has crafted a visual and emotional journey that stays with you long after the credits roll..."
+    ),
+    ActivityItem.DiscussionActivity(
+        username    = "DreamWeaver42",
+        userEmoji   = "🤔",
+        userBgColor = Color(0xFF1565C0),
+        timeAgo     = "5 hours ago",
+        tag         = "ALT-PLOT",
+        title       = "Different Ending for Inception",
+        body        = "What if the top never wobbles, but someone else enters the dream? What if Mal was right all along and Cobb is still trapped? This alternative ending would..."
+    ),
+    ActivityItem.CommentActivity(
+        username    = "FilmGeek88",
+        userEmoji   = "🎬",
+        userBgColor = Color(0xFF4A148C),
+        timeAgo     = "1 day ago",
+        body        = "Just rewatched Oppenheimer. Still blown away by that scene! The sound design and Cillian's performance are absolutely haunting. Nolan at his finest.",
+        hashtags    = listOf("#Oppenheimer", "#Murphy", "#Nolan", "#CinePulse")
+    ),
+)
+
+// ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun HomeScreen(
     onNavigateToSearch: () -> Unit,
     onNavigateToReviews: () -> Unit,
     onNavigateToDiscussions: () -> Unit,
     onNavigateToChatbot: () -> Unit,
-    onProfileClick : () -> Unit
+    onProfileClick: () -> Unit,
+    viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
-    val trendingPeople = listOf(
-        TrendingPerson("Nolan",    listOf(Color(0xFFB05C1A), Color(0xFF6B3A10))),
-        TrendingPerson("Zimmer",   listOf(Color(0xFF1A1A2E), Color(0xFF4158D0))),
-        TrendingPerson("Chastain", listOf(Color(0xFF2E7D32), Color(0xFF66BB6A))),
-        TrendingPerson("Murphy",   listOf(Color(0xFF1565C0), Color(0xFF42A5F5))),
+    val moviesInTheaters by viewModel.inTheaterList.collectAsStateWithLifecycle()
+    HomeScreenContent(
+        trendingPeople = sampleTrendingPeople,
+        activityFeed   = sampleActivityFeed,
+        onProfileClick = onProfileClick,
+        moviesInTheaters
     )
+}
 
-    val activityFeed: List<ActivityItem> = listOf(
-        ActivityItem.ReviewActivity(
-            criticName  = "Jane D.",
-            criticEmoji = "💎",
-            badge       = "Diamond Critic",
-            badgeColor  = Color(0xFFFFB300),
-            timeAgo     = "2 hours ago",
-            rating      = 4.5f,
-            movieTitle  = "REVIEWS",
-            headline    = "Astral Echo is a masterpiece that redefines science fiction",
-            body        = "The cinematography alone is worth the price of admission. Denis Villeneuve has crafted a visual and emotional journey that stays with you long after the credits roll..."
-        ),
-        ActivityItem.DiscussionActivity(
-            username    = "DreamWeaver42",
-            userEmoji   = "🤔",
-            userBgColor = Color(0xFF1565C0),
-            timeAgo     = "5 hours ago",
-            tag         = "ALT-PLOT",
-            title       = "Different Ending for Inception",
-            body        = "What if the top never wobbles, but someone else enters the dream? What if Mal was right all along and Cobb is still trapped? This alternative ending would..."
-        ),
-        ActivityItem.CommentActivity(
-            username    = "FilmGeek88",
-            userEmoji   = "🎬",
-            userBgColor = Color(0xFF4A148C),
-            timeAgo     = "1 day ago",
-            body        = "Just rewatched Oppenheimer. Still blown away by that scene! The sound design and Cillian's performance are absolutely haunting. Nolan at his finest.",
-            hashtags    = listOf("#Oppenheimer", "#Murphy", "#Nolan", "#CinePulse")
-        ),
-    )
-
+// ── Stateless content (previewable) ───────────────────────────────────────────
+@Composable
+private fun HomeScreenContent(
+    trendingPeople: List<TrendingPerson>,
+    activityFeed: List<ActivityItem>,
+    onProfileClick: () -> Unit,
+    newMovies : List<movieResponse>
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(BgDark)
     ) {
-        TopBar(
-            onProfileClick = onProfileClick
-        )
+        TopBar(onProfileClick = onProfileClick)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-
             // ── Hero banner ───────────────────────────────────────────────────
             item {
-                HeroBanner()
+                HeroBanner(newMovies)
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
@@ -157,9 +228,9 @@ fun HomeScreen(
                 ) {
                     Text(text = "📈", fontSize = 15.sp)
                     Text(
-                        text = "Trending Pulse",
-                        color = TextPrimary,
-                        fontSize = 17.sp,
+                        text       = "Trending Pulse",
+                        color      = TextPrimary,
+                        fontSize   = 17.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -181,11 +252,11 @@ fun HomeScreen(
             // ── Latest Activity header ────────────────────────────────────────
             item {
                 Text(
-                    text = "Latest Activity",
-                    color = TextPrimary,
-                    fontSize = 17.sp,
+                    text       = "Latest Activity",
+                    color      = TextPrimary,
+                    fontSize   = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier   = Modifier.padding(horizontal = 16.dp)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -193,9 +264,9 @@ fun HomeScreen(
             // ── Activity feed ─────────────────────────────────────────────────
             items(activityFeed) { item ->
                 when (item) {
-                    is ActivityItem.ReviewActivity    -> ReviewActivityCard(item)
+                    is ActivityItem.ReviewActivity     -> ReviewActivityCard(item)
                     is ActivityItem.DiscussionActivity -> DiscussionActivityCard(item)
-                    is ActivityItem.CommentActivity   -> CommentActivityCard(item)
+                    is ActivityItem.CommentActivity    -> CommentActivityCard(item)
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -204,20 +275,29 @@ fun HomeScreen(
 }
 
 // ── Hero Banner ────────────────────────────────────────────────────────────────
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun HeroBanner() {
+private fun HeroBanner(newRelease : List<movieResponse>) {
+    // false = TRENDING NOW (default), true = NEW RELEASE
+    var isNewRelease by remember { mutableStateOf(false) }
+
+    val currentMovies = if (isNewRelease) newRelease else sampleTrendingMovies
+    val pagerState    = rememberPagerState(pageCount = { currentMovies.size })
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .height(320.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF7B3F00), Color(0xFF1A0A00))
-                )
-            )
     ) {
+        // Background gradient — follows current page
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+//                .background(currentMovies[pagerState.currentPage].gradient)
+        )
+
         // Dark overlay
         Box(
             modifier = Modifier
@@ -232,56 +312,109 @@ private fun HeroBanner() {
                 .padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            HeroBadge(text = "TRENDING NOW", color = AccentBlue, onClick = {})
-            HeroBadge(text = "NEW RELEASE",  color = AccentBlue, onClick = {})
+            HeroBadge(
+                text       = "TRENDING NOW",
+                color      = AccentBlue,
+                isSelected = !isNewRelease,
+                onClick    = { isNewRelease = false }
+            )
+            HeroBadge(
+                text       = "NEW RELEASE",
+                color      = AccentBlue,
+                isSelected = isNewRelease,
+                onClick    = { isNewRelease = true }
+            )
         }
 
-        // Bottom info
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "ASTRAL ECHO",
-                color = TextPrimary,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 2.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "2026 • Sci-Fi Thriller • 148 min",
-                color = TextSecondary,
-                fontSize = 13.sp
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+        // Bottom swipeable section
+        MoviesSection(
+            moviesList = currentMovies,
+            pagerState = pagerState
+        )
+    }
+}
 
-            // Dot indicators
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                repeat(3) { i ->
-                    Box(
-                        modifier = Modifier
-                            .size(if (i == 0) 20.dp else 8.dp, 8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(if (i == 0) AccentBlue else TextSecondary.copy(alpha = 0.4f))
-                    )
-                }
+// ── Movies Section (BoxScope extension) ───────────────────────────────────────
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun BoxScope.MoviesSection(
+    moviesList: List<movieResponse>,
+    pagerState: PagerState
+) {
+    Column(
+        modifier = Modifier
+            .align(Alignment.BottomStart)
+            .fillMaxWidth()
+    ) {
+        HorizontalPager(
+            state    = pagerState,
+            modifier = Modifier.fillMaxWidth()
+        ) { page ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text          = moviesList[page].title,
+                    color         = TextPrimary,
+                    fontSize      = 30.sp,
+                    fontWeight    = FontWeight.ExtraBold,
+                    letterSpacing = 2.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text     = moviesList[page].release_year.toString()+" "+moviesList[page].genres+" "+moviesList[page].runtime_minutes,
+                    color    = TextSecondary,
+                    fontSize = 13.sp
+                )
+            }
+        }
+
+        // Dot indicators synced to pager
+        Row(
+            modifier = Modifier.padding(start = 16.dp, bottom = 16.dp, top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            repeat(moviesList.size) { i ->
+                val isSelected = pagerState.currentPage == i
+                Box(
+                    modifier = Modifier
+                        .animateContentSize()
+                        .size(width = if (isSelected) 20.dp else 8.dp, height = 8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(
+                            if (isSelected) AccentBlue
+                            else TextSecondary.copy(alpha = 0.4f)
+                        )
+                )
             }
         }
     }
 }
 
+// ── Hero Badge ────────────────────────────────────────────────────────────────
 @Composable
-private fun HeroBadge(text: String, color: Color,onClick : () -> Unit) {
+private fun HeroBadge(
+    text: String,
+    color: Color,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .border(1.dp, color, RoundedCornerShape(20.dp))
+            .background(if (isSelected) color else Color.Transparent)
+            .clickable { onClick() }
             .padding(horizontal = 10.dp, vertical = 4.dp)
-            .clickable{onClick()}
     ) {
-        Text(text = text, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text       = text,
+            color      = if (isSelected) Color.White else color,
+            fontSize   = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -293,7 +426,6 @@ private fun TrendingPersonItem(person: TrendingPerson) {
         modifier = Modifier.width(72.dp)
     ) {
         Box {
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(64.dp)
@@ -302,14 +434,18 @@ private fun TrendingPersonItem(person: TrendingPerson) {
                     .border(2.dp, Color(0xFF1C2333), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = person.name.first().toString(), color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text       = person.name.first().toString(),
+                    color      = TextPrimary,
+                    fontSize   = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
-            // Green "+" badge
             Box(
                 modifier = Modifier
                     .size(20.dp)
                     .clip(CircleShape)
-                    .background(EmeraldGreen )
+                    .background(EmeraldGreen)
                     .align(Alignment.BottomEnd),
                 contentAlignment = Alignment.Center
             ) {
@@ -317,17 +453,11 @@ private fun TrendingPersonItem(person: TrendingPerson) {
             }
         }
         Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = person.name,
-            color = TextPrimary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Text(text = person.name, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 
 // ── Activity Cards ─────────────────────────────────────────────────────────────
-
 @Composable
 private fun ReviewActivityCard(item: ActivityItem.ReviewActivity) {
     Column(
@@ -339,7 +469,6 @@ private fun ReviewActivityCard(item: ActivityItem.ReviewActivity) {
             .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
             .padding(14.dp)
     ) {
-        // Critic header row
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -358,26 +487,48 @@ private fun ReviewActivityCard(item: ActivityItem.ReviewActivity) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(text = item.criticName, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text       = item.criticName,
+                        color      = TextPrimary,
+                        fontSize   = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
                             .background(item.badgeColor)
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
-                        Text(text = item.badge, color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text       = item.badge,
+                            color      = Color.Black,
+                            fontSize   = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
                 Text(text = item.timeAgo, color = TextSecondary, fontSize = 11.sp)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = AccentGold, modifier = Modifier.size(15.dp))
-                Text(text = "${item.rating} / 5", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Icon(
+                    Icons.Default.Star,
+                    contentDescription = null,
+                    tint     = AccentGold,
+                    modifier = Modifier.size(15.dp)
+                )
+                Text(
+                    text       = "${item.rating} / 5",
+                    color      = TextPrimary,
+                    fontSize   = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
-
         Text(text = item.movieTitle, color = AccentBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = item.headline, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp)
@@ -385,7 +536,6 @@ private fun ReviewActivityCard(item: ActivityItem.ReviewActivity) {
         Text(text = item.body, color = TextSecondary, fontSize = 13.sp, lineHeight = 20.sp)
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Read Full Review button
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -395,7 +545,13 @@ private fun ReviewActivityCard(item: ActivityItem.ReviewActivity) {
                 .padding(vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "READ FULL REVIEW", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text(
+                text          = "READ FULL REVIEW",
+                color         = TextPrimary,
+                fontSize      = 13.sp,
+                fontWeight    = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
         }
     }
 }
@@ -432,8 +588,16 @@ private fun DiscussionActivityCard(item: ActivityItem.DiscussionActivity) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(AccentBlue))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(AccentBlue)
+            )
             Text(text = item.tag, color = AccentBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
 
@@ -475,9 +639,7 @@ private fun CommentActivityCard(item: ActivityItem.CommentActivity) {
         }
 
         Spacer(modifier = Modifier.height(10.dp))
-
         Text(text = item.body, color = TextPrimary, fontSize = 13.sp, lineHeight = 20.sp)
-
         Spacer(modifier = Modifier.height(10.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -488,14 +650,14 @@ private fun CommentActivityCard(item: ActivityItem.CommentActivity) {
     }
 }
 
+// ── Preview ────────────────────────────────────────────────────────────────────
 @Preview(showBackground = true, backgroundColor = 0xFF080C14)
 @Composable
 fun HomeScreenPreview() {
-    HomeScreen(
-        onNavigateToSearch = {},
-        onNavigateToChatbot = {},
-        onNavigateToReviews = {},
-        onNavigateToDiscussions = {},
-        onProfileClick = {}
+    HomeScreenContent(
+        trendingPeople = sampleTrendingPeople,
+        activityFeed   = sampleActivityFeed,
+        onProfileClick = {},
+        sampleTrendingMovies
     )
 }

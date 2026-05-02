@@ -16,6 +16,9 @@ import retrofit2.http.Query
 
 interface contentApiService {
 
+
+    @GET("content/movies")
+    suspend fun getMoviesInTheaters() : Response<List<movieResponse>>
     @GET("content/search")
     suspend fun searchContent(
        @Query("q") queryContent : String

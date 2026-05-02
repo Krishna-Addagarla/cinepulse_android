@@ -172,7 +172,7 @@ private val sampleSuggestedGroups = listOf(
 @Composable
 fun DiscussionsScreen(
     onNavigateBack: () -> Unit,
-    onGroupClick: (Long) -> Unit = {},       // FIX: Long, matching FanClubResponse.id
+    onGroupClick: (Long) -> Unit = {},
     onDiscussionClick: (String) -> Unit = {},
     onSearchClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},

@@ -44,11 +44,12 @@ fun UserInfoScreen(
             showBackButton = true,
             showNotificationIcon = false,
             showProfileIcon = false,
-            onBackClick = {}
+            onBackClick = onBackClick
         )
 
         Column (
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ){
             Spacer(modifier = Modifier.height(20.dp))
 

@@ -23,6 +23,25 @@ class ContentRepositoryImpl @Inject constructor(
     private val contentApiService: contentApiService
 ) : ContentRepository {
 
+    override suspend fun getMoviesInTheaters(): Flow<Resource<List<movieResponse>>> = flow {
+        try {
+            emit(Resource.Loading())
+            val response = contentApiService.getMoviesInTheaters()
+
+            if (response.isSuccessful && response.body()!=null){
+                emit(Resource.Success(response.body()!!))
+            }else{
+                emit(Resource.Error(response.message()))
+            }
+
+        }catch (e: HttpException){
+            emit(Resource.Error(e.message()))
+        }catch (e: IOException){
+            emit(Resource.Error("Network Error : ${e.message}"))
+        }catch (e: Exception){
+            emit(Resource.Error("Unexpected Error : ${e.message}"))
+        }
+    }
     override suspend fun searchContent(q: String): Flow<Resource<searchResponse>> = flow{
         try {
             emit(Resource.Loading())

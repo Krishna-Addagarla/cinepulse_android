@@ -45,7 +45,7 @@ data class crewResponse(
 )
 
 data class movieResponse(
-    val name: String,
+    val title: String,
     val photo_url: String,
     val plot: String,
     val release_date: String,

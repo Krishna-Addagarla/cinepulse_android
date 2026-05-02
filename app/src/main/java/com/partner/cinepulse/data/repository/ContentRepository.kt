@@ -11,6 +11,8 @@ import com.partner.cinepulse.utils.Resource
 import kotlinx.coroutines.flow.Flow
 
 interface ContentRepository {
+
+    suspend fun getMoviesInTheaters() : Flow<Resource<List<movieResponse>>>
     suspend fun searchContent(q:String) : Flow<Resource<searchResponse>>
     suspend fun getActor(actor_id: Int) : Flow<Resource<actorResponse>>
 
