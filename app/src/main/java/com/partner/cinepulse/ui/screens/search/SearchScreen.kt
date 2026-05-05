@@ -55,6 +55,9 @@ data class SuggestedItem(val title: String, val rating: Float, val color1: Color
 @Composable
 fun SearchScreen(
     onNavigateBack: () -> Boolean,
+    onNavigateToMovie: (id: Int) -> Unit,
+    onNavigateToActor: (id: Int) -> Unit,
+    onNavigateToFanclub: (id: Int) -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uistate.collectAsStateWithLifecycle()
@@ -184,7 +187,10 @@ fun SearchScreen(
                     query = query,
                     isLoading = uiState.isLoading,
                     errorMessage = uiState.errorMessage,
-                    searchResponse = searchResponse
+                    searchResponse = searchResponse,
+                    onNavigateToMovie,
+                    onNavigateToActor,
+                    onNavigateToFanclub
                 )
             }
 
@@ -212,7 +218,10 @@ private fun SearchResultsPanel(
     query: String,
     isLoading: Boolean,
     errorMessage: String?,
-    searchResponse: searchResponse?
+    searchResponse: searchResponse?,
+    onNavigateToMovie: (id: Int) -> Unit,
+    onNavigateToActor: (id: Int) -> Unit,
+    onNavigateToFanclub: (id: Int) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         if (searchResponse != null && !isLoading) {
@@ -314,7 +323,17 @@ private fun SearchResultsPanel(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(searchResponse.results, key = { "${it.id}_${it.type}" }) { item ->
-                        SearchResultCard(item = item)
+                        SearchResultCard(
+                            item = item,
+                            onClick = {selectedItem->
+                                when(selectedItem.type.lowercase()){
+                                    "movie","tvshow" -> onNavigateToMovie(selectedItem.id)
+                                    "actor","crew" -> onNavigateToActor(selectedItem.id)
+                                    "fanclub" -> onNavigateToFanclub(selectedItem.id)
+                                }
+
+                            }
+                        )
                     }
                 }
             }
@@ -323,7 +342,7 @@ private fun SearchResultsPanel(
 }
 
 @Composable
-private fun SearchResultCard(item: searchItem) {
+private fun SearchResultCard(item: searchItem,onClick: (searchItem) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -331,7 +350,7 @@ private fun SearchResultCard(item: searchItem) {
             .background(CardDark)
             .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
             .clickable { }
-            .padding(12.dp),
+            .padding(12.dp).clickable{ onClick(item) },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -564,5 +583,8 @@ private fun SuggestedCard(item: SuggestedItem, onClick: () -> Unit = {}) {
 @Preview(showBackground = true, backgroundColor = 0xFF080C14)
 @Composable
 fun SearchScreenPreview() {
-    SearchScreen(onNavigateBack = { false })
+    SearchScreen(onNavigateBack = { false },
+        onNavigateToActor = {},
+        onNavigateToMovie = {},
+        onNavigateToFanclub = {})
 }

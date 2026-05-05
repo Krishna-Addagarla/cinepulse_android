@@ -13,11 +13,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.partner.cinepulse.data.repository.TokenRepository
+import com.partner.cinepulse.ui.screens.actorinfo.ActorInfoScreen
 import com.partner.cinepulse.ui.screens.auth.AuthScreen
 import com.partner.cinepulse.ui.screens.auth.OtpVerificationScreen
 import com.partner.cinepulse.ui.screens.chatbot.ChatbotScreen
 import com.partner.cinepulse.ui.screens.fanclub.DiscussionsScreen
 import com.partner.cinepulse.ui.screens.home.HomeScreen
+import com.partner.cinepulse.ui.screens.movieinfo.MovieInfoScreen
 import com.partner.cinepulse.ui.screens.reviews.ReviewsScreen
 import com.partner.cinepulse.ui.screens.search.SearchScreen
 import com.partner.cinepulse.ui.screens.userInfo.UserInfoScreen
@@ -92,7 +94,14 @@ fun AppNavigation(
                 SearchScreen(
                     onNavigateBack = {
                         navController.popBackStack()
-                    }
+                    },
+                    onNavigateToMovie = {id->
+                        navController.navigate(Screen.Movie.createRoute(id))
+                    },
+                    onNavigateToActor = {id->
+                        navController.navigate(Screen.Actor.createRoute(id))
+                    },
+                    onNavigateToFanclub = {}
                 )
             }
 
@@ -128,6 +137,29 @@ fun AppNavigation(
                     }
                 )
             }
+
+            composable(Screen.Actor.route,
+                arguments = listOf(navArgument("id"){type = NavType.IntType})){backStackEntry ->
+                    val id = backStackEntry.arguments?.getInt("id")?:0
+                    ActorInfoScreen(
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        },
+                        id
+                    )
+            }
+
+            composable(Screen.Movie.route,
+                arguments = listOf(navArgument("id"){type = NavType.IntType})){backStackEntry ->
+                val id = backStackEntry.arguments?.getInt("id")?:0
+                MovieInfoScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    id
+                )
+            }
+
         }
     }
 

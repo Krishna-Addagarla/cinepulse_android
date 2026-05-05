@@ -99,7 +99,10 @@ private val posts = listOf(
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
-fun ActorInfoScreen(onNavigateBack: () -> Unit = {}) {
+fun ActorInfoScreen(
+    onNavigateBack: () -> Unit = {},
+    id : Int
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -377,5 +380,8 @@ private fun PostCard(post: PostItem) {
 @Preview(showBackground = true, backgroundColor = 0xFF080C14)
 @Composable
 fun PersonProfileScreenPreview() {
-    ActorInfoScreen()
+    ActorInfoScreen(
+        onNavigateBack = {},
+        6
+    )
 }

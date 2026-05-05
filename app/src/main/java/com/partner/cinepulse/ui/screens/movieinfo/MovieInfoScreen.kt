@@ -95,7 +95,7 @@ private val sampleReviews = listOf(
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
-fun MovieInfoScreen(onNavigateBack: () -> Unit = {}) {
+fun MovieInfoScreen(onNavigateBack: () -> Unit = {}, id: Int) {
     var reviewFilter by remember { mutableStateOf("Latest") }
     val likedStates = remember { sampleReviews.map { mutableStateOf(false) } }
     val likeCounts  = remember { sampleReviews.map { mutableStateOf(it.likes) } }
@@ -473,5 +473,8 @@ private fun ReviewCard(
 @Preview(showBackground = true, backgroundColor = 0xFF080C14)
 @Composable
 fun MovieInfoScreenPreview() {
-    MovieInfoScreen()
+    MovieInfoScreen(
+        onNavigateBack = {},
+        2
+    )
 }
