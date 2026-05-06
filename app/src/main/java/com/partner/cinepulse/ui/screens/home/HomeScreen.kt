@@ -183,6 +183,7 @@ fun HomeScreen(
     onNavigateToDiscussions: () -> Unit,
     onNavigateToChatbot: () -> Unit,
     onProfileClick: () -> Unit,
+    onMovieClick : (id : Int) -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val moviesInTheaters by viewModel.inTheaterList.collectAsStateWithLifecycle()
@@ -190,7 +191,8 @@ fun HomeScreen(
         trendingPeople = sampleTrendingPeople,
         activityFeed   = sampleActivityFeed,
         onProfileClick = onProfileClick,
-        moviesInTheaters
+        onMovieClick = onMovieClick,
+    moviesInTheaters
     )
 }
 
@@ -200,6 +202,7 @@ private fun HomeScreenContent(
     trendingPeople: List<TrendingPerson>,
     activityFeed: List<ActivityItem>,
     onProfileClick: () -> Unit,
+    onMovieClick : (id : Int) -> Unit,
     newMovies : List<movieResponse>
 ) {
     Column(
@@ -215,7 +218,7 @@ private fun HomeScreenContent(
         ) {
             // ── Hero banner ───────────────────────────────────────────────────
             item {
-                HeroBanner(newMovies)
+                HeroBanner(newMovies,onMovieClick)
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
@@ -277,7 +280,7 @@ private fun HomeScreenContent(
 // ── Hero Banner ────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun HeroBanner(newRelease : List<movieResponse>) {
+private fun HeroBanner(newRelease : List<movieResponse>,onMovieClick: (Int) -> Unit) {
     // false = TRENDING NOW (default), true = NEW RELEASE
     var isNewRelease by remember { mutableStateOf(false) }
 
@@ -295,6 +298,7 @@ private fun HeroBanner(newRelease : List<movieResponse>) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .clickable{onMovieClick(currentMovies[pagerState.currentPage].id)}
 //                .background(currentMovies[pagerState.currentPage].gradient)
         )
 
@@ -658,6 +662,7 @@ fun HomeScreenPreview() {
         trendingPeople = sampleTrendingPeople,
         activityFeed   = sampleActivityFeed,
         onProfileClick = {},
+        onMovieClick ={},
         sampleTrendingMovies
     )
 }

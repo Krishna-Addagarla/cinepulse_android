@@ -86,6 +86,9 @@ fun AppNavigation(
                     },
                     onProfileClick = {
                         navController.navigate(Screen.Profile.route)
+                    },
+                    onMovieClick = {
+                        navController.navigate(Screen.Movie.createRoute(id))
                     }
                 )
             }
