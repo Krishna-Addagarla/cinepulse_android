@@ -26,10 +26,21 @@ data class actorResponse(
     val birth_place: String,
     val occupation: String,
     val id : Int,
-    val overall_rating : Int,
+    val overall_rating : Float,
     val total_ratings : Int,
-    val filmography: List<String>,
+    val filmography: List<Filmography>,
     val awards: List<String>
+)
+
+data class  Filmography(
+    val id: Int,
+    val title: String,
+    val release_year: Int,
+    val character_name: String,
+    val rating: Float,
+    val total_ratings: Int,
+    val poster_url: String,
+    val media_type : String
 )
 
 data class crewResponse(
@@ -44,6 +55,14 @@ data class crewResponse(
     val total_ratings : Int,
 )
 
+data class CastMember(
+    val id: Int,
+    val name: String,
+    val character_name: String,
+    val photo_url: String,
+    val rating: Float,
+    val total_ratings: Int
+)
 data class movieResponse(
     val title: String,
     val photo_url: String,
@@ -52,11 +71,11 @@ data class movieResponse(
     val release_year: Int,
     val runtime_minutes: Int,
     val id : Int,
-    val overall_rating : Int,
-    val total_ratings : Int,
+    val overall_rating : Float,
+    val total_ratings : Float,
     val genres: List<String>,
-    val cast: List<String>,
-    val crew: List<String>,
+    val cast: List<CastMember>,
+    val crew: List<CastMember>,
     val awards:List<String>
 )
 

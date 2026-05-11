@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Text
@@ -69,10 +70,17 @@ fun UserInfoScreen(
 
             Spacer(modifier = Modifier.height(50.dp))
 
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
+            }
+
             Button(
                 modifier = Modifier.fillMaxWidth()
                     .padding(50.dp),
                 onClick = onLogout,
+                shape = RoundedCornerShape(10.dp),
                 colors = ButtonColors(
                     contentColor = Color.White,
                     containerColor = Color.Red,

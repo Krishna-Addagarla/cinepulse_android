@@ -34,6 +34,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,10 +44,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.partner.cinepulse.data.remote.models.movieResponse
 import com.partner.cinepulse.ui.theme.AccentBlue
 import com.partner.cinepulse.ui.theme.AccentRed
 import com.partner.cinepulse.ui.theme.AccentGold
@@ -58,6 +64,7 @@ import com.partner.cinepulse.ui.theme.ChipBorder
 import com.partner.cinepulse.ui.theme.DarkSlate
 import com.partner.cinepulse.ui.theme.TextPrimary
 import com.partner.cinepulse.ui.theme.TextSecondary
+import com.partner.cinepulse.utils.formatBirthDate
 
 // ── Data models ────────────────────────────────────────────────────────────────
 data class CastMember(
@@ -95,11 +102,20 @@ private val sampleReviews = listOf(
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
-fun MovieInfoScreen(onNavigateBack: () -> Unit = {}, id: Int) {
+fun MovieInfoScreen(
+    onNavigateBack: () -> Unit = {},
+    id: Int,
+    viewModel: MovieInfoViewModel = hiltViewModel()
+) {
     var reviewFilter by remember { mutableStateOf("Latest") }
     val likedStates = remember { sampleReviews.map { mutableStateOf(false) } }
     val likeCounts  = remember { sampleReviews.map { mutableStateOf(it.likes) } }
 
+    val movieInfo by viewModel.movieInfo.collectAsStateWithLifecycle()
+
+    LaunchedEffect(id ) {
+        viewModel.getMovieDetails(id)
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().background(BgDark),
@@ -107,7 +123,7 @@ fun MovieInfoScreen(onNavigateBack: () -> Unit = {}, id: Int) {
         ) {
 
             // 1. Poster hero with overlapping title + chips
-            item { PosterHero(onNavigateBack = onNavigateBack) }
+            item { PosterHero(onNavigateBack = onNavigateBack,movieInfo) }
 
             // 2. Rating bar
             item {
@@ -123,7 +139,7 @@ fun MovieInfoScreen(onNavigateBack: () -> Unit = {}, id: Int) {
                     SectionLabel("Movie Plot")
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "When a former intelligence operative discovers a global conspiracy that threatens to destabilize world governments, she must navigate a dangerous web of deception and betrayal. With time running out and enemies closing in from all sides, she assembles an unlikely team to expose the truth before it's too late.",
+                        text = movieInfo?.plot?:"",
                         color = TextSecondary,
                         fontSize = 14.sp,
                         lineHeight = 22.sp
@@ -143,7 +159,7 @@ fun MovieInfoScreen(onNavigateBack: () -> Unit = {}, id: Int) {
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        castMembers.forEach { CastAvatar(it) }
+                        movieInfo?.cast?.forEach { CastAvatar(it) }
                     }
                 }
                 HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
@@ -209,7 +225,7 @@ fun MovieInfoScreen(onNavigateBack: () -> Unit = {}, id: Int) {
 
 // ── Poster Hero ────────────────────────────────────────────────────────────────
 @Composable
-private fun PosterHero(onNavigateBack: () -> Unit) {
+private fun PosterHero(onNavigateBack: () -> Unit, movieInfo: movieResponse?) {
     Box(modifier = Modifier.fillMaxWidth()) {
 
         // Full-width poster background
@@ -218,18 +234,18 @@ private fun PosterHero(onNavigateBack: () -> Unit) {
         //     modifier = Modifier.fillMaxWidth().height(420.dp),
         //     contentScale = ContentScale.Crop)
         // Full-width poster — replace with AsyncImage for real posters:
-        // AsyncImage(model = posterUrl, contentDescription = null,
-        //     modifier = Modifier.fillMaxWidth().height(420.dp),
-        //     contentScale = ContentScale.Crop)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(420.dp)
-                .background(Brush.verticalGradient(listOf(Color(0xFF3A1C0A), Color(0xFF1A2744), Color(0xFF0A0E18)))),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "🎬", fontSize = 80.sp)
-        }
+         AsyncImage(model = movieInfo?.photo_url, contentDescription = null,
+             modifier = Modifier.fillMaxWidth().height(420.dp),
+             contentScale = ContentScale.FillBounds)
+//        Box(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(420.dp)
+//                .background(Brush.verticalGradient(listOf(Color(0xFF3A1C0A), Color(0xFF1A2744), Color(0xFF0A0E18)))),
+//            contentAlignment = Alignment.Center
+//        ) {
+//            Text(text = "🎬", fontSize = 80.sp)
+//        }
 
         // Bottom scrim — fades poster into BgDark
         Box(
@@ -247,14 +263,14 @@ private fun PosterHero(onNavigateBack: () -> Unit) {
                 .padding(start = 16.dp, end = 16.dp, bottom = 20.dp)
         ) {
             Text(
-                text = "Shadow Protocol",
+                text = movieInfo?.title ?: "",
                 color = TextPrimary,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold
             )
             Spacer(modifier = Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                InfoChip("March 15, 2026")
+                InfoChip(formatBirthDate(movieInfo?.release_date?:""))
                 InfoChip("Action/Thriller")
             }
         }
@@ -315,18 +331,23 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 
 // ── Cast avatar ────────────────────────────────────────────────────────────────
 @Composable
-private fun CastAvatar(member: CastMember) {
+private fun CastAvatar(member: com.partner.cinepulse.data.remote.models.CastMember) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(76.dp)) {
         Box {
             Box(
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(Brush.linearGradient(member.bgColors))
+//                    .background(Brush.linearGradient(member.bgColors))
                     .border(2.dp, CardBorder, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = member.emoji, fontSize = 26.sp)
+                AsyncImage(
+                    model = member.photo_url,
+                    contentDescription = member.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             }
             // Score badge: circular, DarkSlate bg, AccentGreen text
             Box(
@@ -340,7 +361,7 @@ private fun CastAvatar(member: CastMember) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = member.score.toInt().toString(),
+                    text = member.rating.toInt().toString(),
                     color = AccentGreen,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold
@@ -349,7 +370,7 @@ private fun CastAvatar(member: CastMember) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = member.name, color = TextPrimary,   fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, lineHeight = 15.sp)
-        Text(text = member.role, color = TextSecondary, fontSize = 10.sp, maxLines = 1)
+        Text(text = member.character_name, color = TextSecondary, fontSize = 10.sp, maxLines = 1)
     }
 }
 

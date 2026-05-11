@@ -28,15 +28,24 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.partner.cinepulse.data.remote.models.actorResponse
+import com.partner.cinepulse.ui.screens.movieinfo.MovieInfoViewModel
+import com.partner.cinepulse.utils.formatBirthDate
 
 // ── Colour tokens ──────────────────────────────────────────────────────────────
 private val BgDark        = Color(0xFF080C14)
@@ -101,8 +110,17 @@ private val posts = listOf(
 @Composable
 fun ActorInfoScreen(
     onNavigateBack: () -> Unit = {},
-    id : Int
+    id : Int,
+    viewModel: MovieInfoViewModel = hiltViewModel()
 ) {
+    val actorInfo by viewModel.actorInfo.collectAsStateWithLifecycle()
+
+
+    LaunchedEffect(id ) {
+        viewModel.getActorDetails(id)
+    }
+
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -111,24 +129,26 @@ fun ActorInfoScreen(
     ) {
 
         // 1. Hero photo
-        item { ProfileHero(onNavigateBack = onNavigateBack) }
+        item { ProfileHero(onNavigateBack = onNavigateBack,actorInfo) }
 
         // 2. Name + chips
         item {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                Text(
-                    text = "Marcus Chen",
-                    color = TextPrimary,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
+                actorInfo?.name?.let {
+                    Text(
+                        text = it,
+                        color = TextPrimary,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    InfoChip("Born 1985")
-                    InfoChip("Los Angeles, CA")
+                    InfoChip(formatBirthDate(actorInfo?.birth_date?:""))
+                    InfoChip(actorInfo?.birth_place ?: "")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                InfoChip("Actor, Producer")
+                InfoChip(actorInfo?.occupation ?: "")
             }
             HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
         }
@@ -139,7 +159,7 @@ fun ActorInfoScreen(
                 SectionLabel("About")
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "Award-winning actor known for his versatile performances across action, drama, and thriller genres. With over 15 years in the industry, Marcus has captivated audiences worldwide with his intense method acting and dedication to his craft. He has received multiple accolades including Best Actor nominations at major film festivals.",
+                    text = actorInfo?.biography ?: "",
                     color = TextSecondary,
                     fontSize = 14.sp,
                     lineHeight = 22.sp
@@ -183,37 +203,42 @@ fun ActorInfoScreen(
 
 // ── Profile Hero ───────────────────────────────────────────────────────────────
 @Composable
-private fun ProfileHero(onNavigateBack: () -> Unit) {
+private fun ProfileHero(onNavigateBack: () -> Unit, actorInfo: actorResponse?) {
     Box(modifier = Modifier.fillMaxWidth()) {
 
+
+        AsyncImage(model = actorInfo?.photo_url, contentDescription = null,
+            modifier = Modifier.fillMaxWidth().height(420.dp),
+            contentScale = ContentScale.FillBounds)
+
         // Photo area (swap with AsyncImage for real photo)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(380.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFF0A0A0A), Color(0xFF1A1A2E), Color(0xFF0A0A0A))
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            // Placeholder portrait circle
-            Box(
-                modifier = Modifier
-                    .size(180.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(Color(0xFF2A2A3E), Color(0xFF0A0A14))
-                        )
-                    )
-                    .border(2.dp, CardBorder, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "🎭", fontSize = 72.sp)
-            }
-        }
+//        Box(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(380.dp)
+//                .background(
+//                    Brush.verticalGradient(
+//                        colors = listOf(Color(0xFF0A0A0A), Color(0xFF1A1A2E), Color(0xFF0A0A0A))
+//                    )
+//                ),
+//            contentAlignment = Alignment.Center
+//        ) {
+//            // Placeholder portrait circle
+//            Box(
+//                modifier = Modifier
+//                    .size(180.dp)
+//                    .clip(CircleShape)
+//                    .background(
+//                        Brush.radialGradient(
+//                            colors = listOf(Color(0xFF2A2A3E), Color(0xFF0A0A14))
+//                        )
+//                    )
+//                    .border(2.dp, CardBorder, CircleShape),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Text(text = "🎭", fontSize = 72.sp)
+//            }
+//        }
 
         // Bottom scrim
         Box(

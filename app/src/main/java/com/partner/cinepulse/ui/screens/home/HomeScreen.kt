@@ -27,12 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.partner.cinepulse.data.remote.models.movieResponse
 import com.partner.cinepulse.ui.components.TopBar
 import com.partner.cinepulse.ui.theme.AccentBlue
@@ -122,8 +124,8 @@ private fun createSampleMovie(
         release_year = year,
         runtime_minutes = runtime,
         id = name.hashCode(),
-        overall_rating = 0,
-        total_ratings = 0,
+        overall_rating = 0.0f,
+        total_ratings = 0.0f,
         genres = listOf(genre),
         cast = emptyList(),
         crew = emptyList(),
@@ -295,11 +297,24 @@ private fun HeroBanner(newRelease : List<movieResponse>,onMovieClick: (Int) -> U
             .clip(RoundedCornerShape(16.dp))
     ) {
         // Background gradient — follows current page
-        Box(
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .clickable{
+//                    val id = currentMovies[pagerState.currentPage].id
+//                    onMovieClick(id)
+//                }
+//        )
+        AsyncImage(
+            model = currentMovies[pagerState.currentPage].photo_url,
+            contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .clickable{onMovieClick(currentMovies[pagerState.currentPage].id)}
-//                .background(currentMovies[pagerState.currentPage].gradient)
+                .clickable {
+                    val id = currentMovies[pagerState.currentPage].id
+                    onMovieClick(id)
+                },
+            contentScale = ContentScale.FillBounds
         )
 
         // Dark overlay
