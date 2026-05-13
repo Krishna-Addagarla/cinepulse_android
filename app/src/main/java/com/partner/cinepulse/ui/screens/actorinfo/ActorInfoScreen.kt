@@ -111,7 +111,7 @@ private val posts = listOf(
 fun ActorInfoScreen(
     onNavigateBack: () -> Unit = {},
     id : Int,
-    viewModel: MovieInfoViewModel = hiltViewModel()
+    viewModel: ArtistInfoViewModel = hiltViewModel()
 ) {
     val actorInfo by viewModel.actorInfo.collectAsStateWithLifecycle()
 

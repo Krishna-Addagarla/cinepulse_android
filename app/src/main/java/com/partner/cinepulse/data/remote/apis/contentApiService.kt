@@ -24,9 +24,9 @@ interface contentApiService {
        @Query("q") queryContent : String
     ) : Response<searchResponse>
 
-    @GET("content/actors/{actor_id}")
+    @GET("content/artists/{artist_id}")
     suspend fun getActor(
-        @Path("actor_id") actorId : Int
+        @Path("artist_id") actorId : Int
     ) : Response<actorResponse>
 
     @GET("content/crew/{crew_id}")

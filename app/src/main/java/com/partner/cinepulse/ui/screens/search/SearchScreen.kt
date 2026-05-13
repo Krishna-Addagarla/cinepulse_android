@@ -328,10 +328,9 @@ private fun SearchResultsPanel(
                             onClick = {selectedItem->
                                 when(selectedItem.type.lowercase()){
                                     "movie","tvshow" -> onNavigateToMovie(selectedItem.id)
-                                    "actor","crew" -> onNavigateToActor(selectedItem.id)
+                                    "artist" -> onNavigateToActor(selectedItem.id)
                                     "fanclub" -> onNavigateToFanclub(selectedItem.id)
                                 }
-
                             }
                         )
                     }
