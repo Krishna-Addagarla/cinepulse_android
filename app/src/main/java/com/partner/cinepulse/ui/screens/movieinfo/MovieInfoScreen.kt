@@ -52,6 +52,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.partner.cinepulse.data.remote.models.Credit
+import com.partner.cinepulse.data.remote.models.Role
 import com.partner.cinepulse.data.remote.models.movieResponse
 import com.partner.cinepulse.ui.theme.AccentBlue
 import com.partner.cinepulse.ui.theme.AccentRed
@@ -100,30 +102,107 @@ private val sampleReviews = listOf(
     UserReview("3", "R", Color(0xFF2E7D32), "Ryan Park",        5, "Absolutely loved every minute. The action sequences were breathtaking and the story had real emotional depth. A must-watch!", 67, 9),
 )
 
-// ── Screen ─────────────────────────────────────────────────────────────────────
+// ── Fake data for Preview ──────────────────────────────────────────────────────
+private val previewMovieInfo = movieResponse(
+    title = "Interstellar",
+    plot = "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival. Breathtaking visuals meet profound storytelling in this science-fiction epic.",
+    photo_url = "",
+    release_date = "2014-11-07",
+    credits = listOf(
+        Credit(
+            id = 1,
+            name = "Matthew McConaughey",
+            character_name = "Cooper",
+            photo_url = "",
+            rating = 9.0,
+            role = Role(
+                name = "",
+                id = 1
+            ),
+            job_detail = null,
+            total_ratings = 8
+        ),
+        Credit(
+            id = 2,
+            name = "Anne Hathaway",
+            character_name = "Brand",
+            photo_url = "",
+            rating = 8.0,
+            role = Role(
+                name = "",
+                id = 1
+            ),
+            job_detail = null,
+            total_ratings = 8
+        ),
+        Credit(
+            id = 3,
+            name = "Christopher Nolan",
+            character_name = "Director",
+            photo_url = "",
+            rating = 10.0,
+            role = Role(
+                name = "",
+                id = 1
+            ),
+            job_detail = null,
+            total_ratings = 8
+        ),
+    ),
+    release_year = 2012,
+    runtime_minutes = 160,
+    id = 1,
+    overall_rating = 8.0,
+    total_ratings = 8,
+    genres = emptyList(),
+    awards = emptyList()
+)
+
+// ── Outer screen (ViewModel-aware) ─────────────────────────────────────────────
 @Composable
 fun MovieInfoScreen(
     onNavigateBack: () -> Unit = {},
     id: Int,
+    onArtistClick: (artistId: Int) -> Unit,
+    onWriteReviewClick : (movieId : Int)->Unit,
     viewModel: MovieInfoViewModel = hiltViewModel()
+) {
+    val movieInfo by viewModel.movieInfo.collectAsStateWithLifecycle()
+
+    LaunchedEffect(id) {
+        viewModel.getMovieDetails(id)
+    }
+
+    MovieInfoContent(
+        onNavigateBack = onNavigateBack,
+        movieInfo      = movieInfo,
+        onArtistClick  = onArtistClick,
+        onWriteReviewClick= onWriteReviewClick
+    )
+}
+
+// ── Inner content composable (preview-safe, no ViewModel) ──────────────────────
+@Composable
+fun MovieInfoContent(
+    onNavigateBack: () -> Unit = {},
+    movieInfo: movieResponse?,
+    onArtistClick: (artistId: Int) -> Unit,
+    onWriteReviewClick : (movieId : Int)->Unit
 ) {
     var reviewFilter by remember { mutableStateOf("Latest") }
     val likedStates = remember { sampleReviews.map { mutableStateOf(false) } }
     val likeCounts  = remember { sampleReviews.map { mutableStateOf(it.likes) } }
 
-    val movieInfo by viewModel.movieInfo.collectAsStateWithLifecycle()
-
-    LaunchedEffect(id ) {
-        viewModel.getMovieDetails(id)
-    }
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().background(BgDark),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BgDark),
             contentPadding = PaddingValues(bottom = 100.dp)
         ) {
 
             // 1. Poster hero with overlapping title + chips
-            item { PosterHero(onNavigateBack = onNavigateBack,movieInfo) }
+            item { PosterHero(onNavigateBack = onNavigateBack, movieInfo = movieInfo) }
 
             // 2. Rating bar
             item {
@@ -139,9 +218,9 @@ fun MovieInfoScreen(
                     SectionLabel("Movie Plot")
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = movieInfo?.plot?:"",
-                        color = TextSecondary,
-                        fontSize = 14.sp,
+                        text       = movieInfo?.plot ?: "",
+                        color      = TextSecondary,
+                        fontSize   = 14.sp,
                         lineHeight = 22.sp
                     )
                 }
@@ -151,7 +230,10 @@ fun MovieInfoScreen(
             // 4. Cast & Crew
             item {
                 Column(modifier = Modifier.padding(vertical = 16.dp)) {
-                    SectionLabel("Top Cast & Crew", modifier = Modifier.padding(horizontal = 16.dp))
+                    SectionLabel(
+                        text     = "Top Cast & Crew",
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
                     Spacer(modifier = Modifier.height(14.dp))
                     Row(
                         modifier = Modifier
@@ -159,24 +241,26 @@ fun MovieInfoScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        movieInfo?.cast?.forEach { CastAvatar(it) }
+                        movieInfo?.credits?.forEach { credit ->
+                            CastAvatar(member = credit, onArtistClick = onArtistClick)
+                        }
                     }
                 }
                 HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
             }
 
-            // 5. Reviews header with filter
+            // 5. Reviews header with filter chips
             item {
                 Row(
-                    modifier = Modifier
+                    modifier          = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     SectionLabel("User Reviews", modifier = Modifier.weight(1f))
-                    FilterChip("Latest",     reviewFilter == "Latest")     { reviewFilter = "Latest" }
+                    FilterChip("Latest",     selected = reviewFilter == "Latest")     { reviewFilter = "Latest" }
                     Spacer(modifier = Modifier.width(8.dp))
-                    FilterChip("Most Liked", reviewFilter == "Most Liked") { reviewFilter = "Most Liked" }
+                    FilterChip("Most Liked", selected = reviewFilter == "Most Liked") { reviewFilter = "Most Liked" }
                 }
             }
 
@@ -195,7 +279,7 @@ fun MovieInfoScreen(
             }
         } // end LazyColumn
 
-        // ── Floating "Write a Review" button ─────────────────────────────────────
+        // ── Floating "Write a Review" button ──────────────────────────────────
         Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -206,16 +290,16 @@ fun MovieInfoScreen(
                         colors = listOf(Color(0xFF1A6BFF), Color(0xFF0D47A1))
                     )
                 )
-                .clickable { /* TODO: open write review sheet */ }
+                .clickable {onWriteReviewClick(movieInfo?.id ?: 0) }
                 .padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment        = Alignment.CenterVertically,
+            horizontalArrangement    = Arrangement.spacedBy(8.dp)
         ) {
             Text(text = "✏️", fontSize = 16.sp)
             Text(
-                text = "Write a Review",
-                color = Color.White,
-                fontSize = 13.sp,
+                text       = "Write a Review",
+                color      = Color.White,
+                fontSize   = 13.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -228,24 +312,14 @@ fun MovieInfoScreen(
 private fun PosterHero(onNavigateBack: () -> Unit, movieInfo: movieResponse?) {
     Box(modifier = Modifier.fillMaxWidth()) {
 
-        // Full-width poster background
-        // ↓ Replace this Box with AsyncImage for real poster images:
-        // AsyncImage(model = posterUrl, contentDescription = null,
-        //     modifier = Modifier.fillMaxWidth().height(420.dp),
-        //     contentScale = ContentScale.Crop)
-        // Full-width poster — replace with AsyncImage for real posters:
-         AsyncImage(model = movieInfo?.photo_url, contentDescription = null,
-             modifier = Modifier.fillMaxWidth().height(420.dp),
-             contentScale = ContentScale.FillBounds)
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(420.dp)
-//                .background(Brush.verticalGradient(listOf(Color(0xFF3A1C0A), Color(0xFF1A2744), Color(0xFF0A0E18)))),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            Text(text = "🎬", fontSize = 80.sp)
-//        }
+        AsyncImage(
+            model          = movieInfo?.photo_url,
+            contentDescription = null,
+            modifier       = Modifier
+                .fillMaxWidth()
+                .height(420.dp),
+            contentScale   = ContentScale.FillBounds
+        )
 
         // Bottom scrim — fades poster into BgDark
         Box(
@@ -253,7 +327,9 @@ private fun PosterHero(onNavigateBack: () -> Unit, movieInfo: movieResponse?) {
                 .fillMaxWidth()
                 .height(200.dp)
                 .align(Alignment.BottomCenter)
-                .background(Brush.verticalGradient(colors = listOf(Color.Transparent, BgDark)))
+                .background(
+                    Brush.verticalGradient(colors = listOf(Color.Transparent, BgDark))
+                )
         )
 
         // Title + chips pinned to the bottom of the hero
@@ -263,14 +339,14 @@ private fun PosterHero(onNavigateBack: () -> Unit, movieInfo: movieResponse?) {
                 .padding(start = 16.dp, end = 16.dp, bottom = 20.dp)
         ) {
             Text(
-                text = movieInfo?.title ?: "",
-                color = TextPrimary,
-                fontSize = 28.sp,
+                text       = movieInfo?.title ?: "",
+                color      = TextPrimary,
+                fontSize   = 28.sp,
                 fontWeight = FontWeight.ExtraBold
             )
             Spacer(modifier = Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                InfoChip(formatBirthDate(movieInfo?.release_date?:""))
+                InfoChip(formatBirthDate(movieInfo?.release_date ?: ""))
                 InfoChip("Action/Thriller")
             }
         }
@@ -286,7 +362,12 @@ private fun PosterHero(onNavigateBack: () -> Unit, movieInfo: movieResponse?) {
                 .clickable { onNavigateBack() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary, modifier = Modifier.size(20.dp))
+            Icon(
+                imageVector        = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint               = TextPrimary,
+                modifier           = Modifier.size(20.dp)
+            )
         }
     }
 }
@@ -308,13 +389,16 @@ private fun InfoChip(text: String) {
 // ── Star rating bar ────────────────────────────────────────────────────────────
 @Composable
 private fun StarRatingRow(rating: Float) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
         repeat(5) { i ->
             Icon(
-                imageVector = if (i < rating) Icons.Default.Star else Icons.Outlined.StarOutline,
+                imageVector        = if (i < rating) Icons.Default.Star else Icons.Outlined.StarOutline,
                 contentDescription = null,
-                tint = if (i < rating) AccentGold else TextSecondary,
-                modifier = Modifier.size(24.dp)
+                tint               = if (i < rating) AccentGold else TextSecondary,
+                modifier           = Modifier.size(24.dp)
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
@@ -326,30 +410,39 @@ private fun StarRatingRow(rating: Float) {
 // ── Section label ──────────────────────────────────────────────────────────────
 @Composable
 private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    Text(text = text, color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = modifier)
+    Text(
+        text       = text,
+        color      = TextPrimary,
+        fontSize   = 17.sp,
+        fontWeight = FontWeight.Bold,
+        modifier   = modifier
+    )
 }
 
 // ── Cast avatar ────────────────────────────────────────────────────────────────
 @Composable
-private fun CastAvatar(member: com.partner.cinepulse.data.remote.models.CastMember) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(76.dp)) {
+private fun CastAvatar(member: Credit, onArtistClick: (artistId: Int) -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier            = Modifier.width(76.dp)
+    ) {
         Box {
             Box(
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-//                    .background(Brush.linearGradient(member.bgColors))
+                    .clickable { onArtistClick(member.id) }
                     .border(2.dp, CardBorder, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = member.photo_url,
+                    model              = member.photo_url,
                     contentDescription = member.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    modifier           = Modifier.fillMaxSize(),
+                    contentScale       = ContentScale.Crop
                 )
             }
-            // Score badge: circular, DarkSlate bg, AccentGreen text
+            // Score badge
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -361,16 +454,28 @@ private fun CastAvatar(member: com.partner.cinepulse.data.remote.models.CastMemb
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = member.rating.toInt().toString(),
-                    color = AccentGreen,
-                    fontSize = 9.sp,
+                    text       = member.rating.toInt().toString(),
+                    color      = AccentGreen,
+                    fontSize   = 9.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = member.name, color = TextPrimary,   fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, lineHeight = 15.sp)
-        Text(text = member.character_name, color = TextSecondary, fontSize = 10.sp, maxLines = 1)
+        Text(
+            text       = member.name,
+            color      = TextPrimary,
+            fontSize   = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines   = 2,
+            lineHeight = 15.sp
+        )
+        Text(
+            text     = member.character_name,
+            color    = TextSecondary,
+            fontSize = 10.sp,
+            maxLines = 1
+        )
     }
 }
 
@@ -386,9 +491,9 @@ private fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 6.dp)
     ) {
         Text(
-            text = text,
-            color = if (selected) TextPrimary else TextSecondary,
-            fontSize = 12.sp,
+            text       = text,
+            color      = if (selected) TextPrimary else TextSecondary,
+            fontSize   = 12.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
     }
@@ -412,7 +517,10 @@ private fun ReviewCard(
             .padding(14.dp)
     ) {
         // User header
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Box(
                 modifier = Modifier
                     .size(42.dp)
@@ -420,17 +528,27 @@ private fun ReviewCard(
                     .background(review.avatarColor),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = review.initials, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text       = review.initials,
+                    color      = TextPrimary,
+                    fontSize   = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
             Column {
-                Text(text = review.name, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text       = review.name,
+                    color      = TextPrimary,
+                    fontSize   = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     repeat(5) { i ->
                         Icon(
-                            imageVector = if (i < review.stars) Icons.Default.Star else Icons.Outlined.StarOutline,
+                            imageVector        = if (i < review.stars) Icons.Default.Star else Icons.Outlined.StarOutline,
                             contentDescription = null,
-                            tint = if (i < review.stars) AccentGold else TextSecondary,
-                            modifier = Modifier.size(13.dp)
+                            tint               = if (i < review.stars) AccentGold else TextSecondary,
+                            modifier           = Modifier.size(13.dp)
                         )
                     }
                 }
@@ -444,36 +562,42 @@ private fun ReviewCard(
         Spacer(modifier = Modifier.height(10.dp))
 
         // Footer: Like · Comment · Share
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-
-            // Like — AccentRed
+        Row(
+            modifier          = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Like
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.clickable { onLike() }
+                modifier              = Modifier.clickable { onLike() }
             ) {
                 Icon(
-                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    imageVector        = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = "Like",
-                    tint = if (isLiked) AccentRed else TextSecondary,
-                    modifier = Modifier.size(17.dp)
+                    tint               = if (isLiked) AccentRed else TextSecondary,
+                    modifier           = Modifier.size(17.dp)
                 )
-                Text(text = "$likeCount", color = if (isLiked) AccentRed else TextSecondary, fontSize = 13.sp)
+                Text(
+                    text  = "$likeCount",
+                    color = if (isLiked) AccentRed else TextSecondary,
+                    fontSize = 13.sp
+                )
             }
 
             Spacer(modifier = Modifier.width(18.dp))
 
-            // Comment — AccentBlue
+            // Comment
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.clickable {}
+                modifier              = Modifier.clickable {}
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.ChatBubbleOutline,
+                    imageVector        = Icons.Outlined.ChatBubbleOutline,
                     contentDescription = "Comment",
-                    tint = AccentBlue,
-                    modifier = Modifier.size(17.dp)
+                    tint               = AccentBlue,
+                    modifier           = Modifier.size(17.dp)
                 )
                 Text(text = "${review.comments}", color = AccentBlue, fontSize = 13.sp)
             }
@@ -482,20 +606,37 @@ private fun ReviewCard(
 
             // Share
             Icon(
-                imageVector = Icons.Default.Share,
+                imageVector        = Icons.Default.Share,
                 contentDescription = "Share",
-                tint = TextSecondary,
-                modifier = Modifier.size(17.dp).clickable {}
+                tint               = TextSecondary,
+                modifier           = Modifier
+                    .size(17.dp)
+                    .clickable {}
             )
         }
     }
 }
 
+// ── Previews ───────────────────────────────────────────────────────────────────
+
 @Preview(showBackground = true, backgroundColor = 0xFF080C14)
 @Composable
-fun MovieInfoScreenPreview() {
-    MovieInfoScreen(
+fun MovieInfoContentPreview() {
+    MovieInfoContent(
         onNavigateBack = {},
-        2
+        movieInfo      = previewMovieInfo,
+        onArtistClick  = {},
+        onWriteReviewClick = {}
+    )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF080C14, name = "Null state")
+@Composable
+fun MovieInfoContentNullPreview() {
+    MovieInfoContent(
+        onNavigateBack = {},
+        movieInfo      = null,
+        onArtistClick  = {},
+        onWriteReviewClick = {}
     )
 }

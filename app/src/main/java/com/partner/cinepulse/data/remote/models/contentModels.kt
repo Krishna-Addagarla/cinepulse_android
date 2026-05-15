@@ -63,6 +63,7 @@ data class CastMember(
     val rating: Float,
     val total_ratings: Int
 )
+
 data class movieResponse(
     val title: String,
     val photo_url: String,
@@ -70,13 +71,28 @@ data class movieResponse(
     val release_date: String,
     val release_year: Int,
     val runtime_minutes: Int,
-    val id : Int,
-    val overall_rating : Float,
-    val total_ratings : Float,
+    val id: Int,
+    val overall_rating: Double,
+    val total_ratings: Int,
     val genres: List<String>,
-    val cast: List<CastMember>,
-    val crew: List<CastMember>,
-    val awards:List<String>
+    val credits: List<Credit>,
+    val awards: List<Any> // Using Any since awards array appears empty, can be replaced with specific type if needed
+)
+
+data class Credit(
+    val id: Int,
+    val name: String,
+    val photo_url: String,
+    val role: Role,
+    val character_name: String,
+    val job_detail: Any? = null, // Nullable since it's null in the example
+    val rating: Double,
+    val total_ratings: Int
+)
+
+data class Role(
+    val name: String,
+    val id: Int
 )
 
 data class tvshowResponse(
@@ -105,11 +121,11 @@ data class reviewRequest(
 )
 
 data class performanceRating(
-    val person_id: Int,
-    val person_name: String,
-    val person_type: String ,
-    val role: String ?= null,
-    val rating: Double
+    val artist_id   : Int,
+    val role_id     : Int,
+    val person_name : String,
+    val person_type : String,
+    val rating      : Double
 )
 
 data class reviewResponse(

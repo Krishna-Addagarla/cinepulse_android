@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -124,11 +125,10 @@ private fun createSampleMovie(
         release_year = year,
         runtime_minutes = runtime,
         id = name.hashCode(),
-        overall_rating = 0.0f,
-        total_ratings = 0.0f,
+        overall_rating = 0.0,
+        total_ratings = 0,
         genres = listOf(genre),
-        cast = emptyList(),
-        crew = emptyList(),
+        credits = emptyList(),
         awards = emptyList()
     )
 }
@@ -287,8 +287,20 @@ private fun HeroBanner(newRelease : List<movieResponse>,onMovieClick: (Int) -> U
     var isNewRelease by remember { mutableStateOf(false) }
 
     val currentMovies = if (isNewRelease) newRelease else sampleTrendingMovies
-    val pagerState    = rememberPagerState(pageCount = { currentMovies.size })
+    val pagerState    = rememberPagerState(
+        initialPage = 0,
+        pageCount = { currentMovies.size.coerceAtLeast(1)}
+    )
+    LaunchedEffect(currentMovies.size, isNewRelease) {
+        if (pagerState.currentPage >= currentMovies.size) {
+            pagerState.scrollToPage(0)
+        }
+    }
 
+    if (currentMovies.isEmpty()) return
+
+    // Safe index — clamp to valid range
+    val safeIndex = pagerState.currentPage.coerceIn(0, currentMovies.lastIndex)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -296,22 +308,14 @@ private fun HeroBanner(newRelease : List<movieResponse>,onMovieClick: (Int) -> U
             .height(320.dp)
             .clip(RoundedCornerShape(16.dp))
     ) {
-        // Background gradient — follows current page
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .clickable{
-//                    val id = currentMovies[pagerState.currentPage].id
-//                    onMovieClick(id)
-//                }
-//        )
+
         AsyncImage(
-            model = currentMovies[pagerState.currentPage].photo_url,
+            model = currentMovies[safeIndex].photo_url,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
                 .clickable {
-                    val id = currentMovies[pagerState.currentPage].id
+                    val id = currentMovies[safeIndex].id
                     onMovieClick(id)
                 },
             contentScale = ContentScale.FillBounds

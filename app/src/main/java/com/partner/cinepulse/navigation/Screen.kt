@@ -24,4 +24,8 @@ sealed class Screen(val route: String) {
     object Fanclub : Screen("fanclub/{id}"){
         fun createRoute(id: Int) = "fanclub/${Uri.encode(id.toString())}"
     }
+    object UserReview : Screen("write_review/{id}"){
+        fun createRoute(id: Int) = "write_review/${Uri.encode(id.toString())}"
+    }
+
 }

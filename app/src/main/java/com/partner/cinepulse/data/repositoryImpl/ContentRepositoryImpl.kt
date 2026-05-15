@@ -14,6 +14,7 @@ import com.partner.cinepulse.utils.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okio.IOException
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,6 +23,8 @@ import javax.inject.Singleton
 class ContentRepositoryImpl @Inject constructor(
     private val contentApiService: contentApiService
 ) : ContentRepository {
+
+    private val movieCache = ConcurrentHashMap<Int, movieResponse>()
 
     override suspend fun getMoviesInTheaters(): Flow<Resource<List<movieResponse>>> = flow {
         try {
@@ -100,10 +103,16 @@ class ContentRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMovie(movieId: Int): Flow<Resource<movieResponse>> = flow{
+
+        movieCache[movieId]?.let { cachedMovie ->
+            emit(Resource.Success(cachedMovie))
+            return@flow
+        }
         try {
             emit(Resource.Loading())
             val response = contentApiService.getMovie(movieId)
             if (response.isSuccessful && response.body() != null) {
+                movieCache[movieId] = response.body()!!
                 emit(Resource.Success(response.body()!!))
             } else {
                 emit(Resource.Error(response.message() ?: "Fetching Failed"))

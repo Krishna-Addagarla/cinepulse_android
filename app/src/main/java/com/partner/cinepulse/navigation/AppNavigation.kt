@@ -20,6 +20,7 @@ import com.partner.cinepulse.ui.screens.chatbot.ChatbotScreen
 import com.partner.cinepulse.ui.screens.fanclub.DiscussionsScreen
 import com.partner.cinepulse.ui.screens.home.HomeScreen
 import com.partner.cinepulse.ui.screens.movieinfo.MovieInfoScreen
+import com.partner.cinepulse.ui.screens.review.WriteReviewScreen
 import com.partner.cinepulse.ui.screens.reviews.ReviewsScreen
 import com.partner.cinepulse.ui.screens.search.SearchScreen
 import com.partner.cinepulse.ui.screens.userInfo.UserInfoScreen
@@ -148,7 +149,10 @@ fun AppNavigation(
                         onNavigateBack = {
                             navController.popBackStack()
                         },
-                        id
+                        id,
+                        onMovieClick = {movieId ->
+                            navController.navigate(Screen.Movie.createRoute(movieId))
+                        }
                     )
             }
 
@@ -159,8 +163,28 @@ fun AppNavigation(
                     onNavigateBack = {
                         navController.popBackStack()
                     },
+                    id,
+                    onArtistClick ={artistId->
+                        navController.navigate(Screen.Actor.createRoute(artistId))
+                    },
+                    onWriteReviewClick = {movieId->
+                        navController.navigate(Screen.UserReview.createRoute(movieId))
+                    }
+
+                )
+            }
+
+            composable(Screen.UserReview.route,
+                arguments = listOf(navArgument("id"){type= NavType.IntType})) { backStackEntry->
+                val id = backStackEntry.arguments?.getInt("id",0)
+                WriteReviewScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onReviewPosted = {},
                     id
                 )
+
             }
 
         }

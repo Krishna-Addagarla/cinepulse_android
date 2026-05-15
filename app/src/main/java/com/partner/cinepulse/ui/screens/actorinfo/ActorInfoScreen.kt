@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.partner.cinepulse.data.remote.models.Filmography
 import com.partner.cinepulse.data.remote.models.actorResponse
 import com.partner.cinepulse.ui.screens.movieinfo.MovieInfoViewModel
 import com.partner.cinepulse.utils.formatBirthDate
@@ -111,7 +112,8 @@ private val posts = listOf(
 fun ActorInfoScreen(
     onNavigateBack: () -> Unit = {},
     id : Int,
-    viewModel: ArtistInfoViewModel = hiltViewModel()
+    viewModel: ArtistInfoViewModel = hiltViewModel(),
+    onMovieClick :(movieId : Int) ->Unit
 ) {
     val actorInfo by viewModel.actorInfo.collectAsStateWithLifecycle()
 
@@ -179,7 +181,8 @@ fun ActorInfoScreen(
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    knownForMovies.forEach { MovieThumbnail(it) }
+                    actorInfo?.filmography?.forEach { MovieThumbnail(it,onMovieClick) }
+//                    knownForMovies.forEach { MovieThumbnail(it) }
                 }
             }
             HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
@@ -302,23 +305,22 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 
 // ── Movie thumbnail ────────────────────────────────────────────────────────────
 @Composable
-private fun MovieThumbnail(movie: KnownForMovie) {
+private fun MovieThumbnail(movie: Filmography,onMovieClick:(movieId : Int)->Unit) {
     Column(modifier = Modifier.width(120.dp)) {
         Box(
             modifier = Modifier
                 .width(120.dp)
                 .height(160.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Brush.verticalGradient(movie.gradientColors))
+                .clickable{
+                    onMovieClick(movie.id)
+                }
                 .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
         ) {
-            // Content
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = movie.emoji, fontSize = 36.sp)
-            }
+
+            AsyncImage(model = movie.poster_url, contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(420.dp),
+                contentScale = ContentScale.FillBounds)
 
             // Rating badge
             Row(
@@ -338,7 +340,7 @@ private fun MovieThumbnail(movie: KnownForMovie) {
 
         Spacer(modifier = Modifier.height(6.dp))
         Text(text = movie.title, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-        Text(text = movie.year,  color = TextSecondary, fontSize = 11.sp)
+        Text(text = movie.release_year.toString(),  color = TextSecondary, fontSize = 11.sp)
     }
 }
 
@@ -407,6 +409,7 @@ private fun PostCard(post: PostItem) {
 fun PersonProfileScreenPreview() {
     ActorInfoScreen(
         onNavigateBack = {},
-        6
+        6,
+        onMovieClick ={}
     )
 }
