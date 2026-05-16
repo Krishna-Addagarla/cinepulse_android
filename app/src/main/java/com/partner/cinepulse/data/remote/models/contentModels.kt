@@ -138,3 +138,21 @@ data class reviewResponse(
     val performance_ratings: List<performanceRating>
 )
 
+data class Review(
+    val rating: Int,
+    val review_text: String,
+    val id: Int,
+    val user_id: Int,
+    val user_name: String,
+    val created_at: String,
+    val performance_ratings: List<PerformanceRating>
+)
+
+data class PerformanceRating(
+    val artistId: Int,
+    val artistName: String,
+    val role: Role,
+    val rating: Int
+)
+
+

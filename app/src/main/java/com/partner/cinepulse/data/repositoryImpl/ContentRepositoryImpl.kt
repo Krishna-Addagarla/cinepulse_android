@@ -2,6 +2,7 @@ package com.partner.cinepulse.data.repositoryImpl
 
 import retrofit2.HttpException
 import com.partner.cinepulse.data.remote.apis.contentApiService
+import com.partner.cinepulse.data.remote.models.Review
 import com.partner.cinepulse.data.remote.models.actorResponse
 import com.partner.cinepulse.data.remote.models.crewResponse
 import com.partner.cinepulse.data.remote.models.movieResponse
@@ -163,5 +164,30 @@ class ContentRepositoryImpl @Inject constructor(
             emit(Resource.Error("Unexpected Error: ${e.message}"))
         }
 
+    }
+
+    override suspend fun getMovieReview(
+        movieId: Int,
+        skip: Int,
+        limit: Int
+    ): Flow<Resource<List<Review>>> = flow {
+        try {
+            emit(Resource.Loading())
+
+            val response = contentApiService.getMovieReviews(
+                movieId = movieId,
+                skip = skip,
+                limit = limit
+            )
+
+            emit(Resource.Success(response.body()!!))
+
+        }catch (e: HttpException){
+            emit(Resource.Error(e.message() ?: "HTTP Error"))
+        }catch (e: IOException) {
+            emit(Resource.Error("Network Error: ${e.message}"))
+        } catch (e: Exception) {
+            emit(Resource.Error("Unexpected Error: ${e.message}"))
+        }
     }
 }

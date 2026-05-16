@@ -1,5 +1,6 @@
 package com.partner.cinepulse.data.remote.apis
 
+import com.partner.cinepulse.data.remote.models.Review
 import com.partner.cinepulse.data.remote.models.actorResponse
 import com.partner.cinepulse.data.remote.models.crewResponse
 import com.partner.cinepulse.data.remote.models.movieResponse
@@ -49,4 +50,11 @@ interface contentApiService {
         @Path("movie_id") movieId : Int,
         @Body request: reviewRequest
     ) : Response<reviewResponse>
+
+    @GET("content/movies/{movie_id}/reviews")
+    suspend fun getMovieReviews(
+        @Path("movie_id") movieId :Int,
+        @Query("skip") skip:Int,
+        @Query("limit") limit : Int
+    ) : Response<List<Review>>
 }

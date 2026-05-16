@@ -1,5 +1,6 @@
 package com.partner.cinepulse.data.repository
 
+import com.partner.cinepulse.data.remote.models.Review
 import com.partner.cinepulse.data.remote.models.actorResponse
 import com.partner.cinepulse.data.remote.models.crewResponse
 import com.partner.cinepulse.data.remote.models.movieResponse
@@ -20,7 +21,6 @@ interface ContentRepository {
     suspend fun getMovie(movieId : Int) : Flow<Resource<movieResponse>>
     suspend fun getTvShow(tvShowId : Int) : Flow<Resource<tvshowResponse>>
     suspend fun postReview(movieId : Int,request: reviewRequest) : Flow<Resource<reviewResponse>>
-
-
+    suspend fun getMovieReview(movieId : Int,skip : Int,limit : Int) : Flow<Resource<List<Review>>>
 
 }

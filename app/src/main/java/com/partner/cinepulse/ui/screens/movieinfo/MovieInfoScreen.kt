@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.StarOutline
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -53,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.partner.cinepulse.data.remote.models.Credit
+import com.partner.cinepulse.data.remote.models.Review
 import com.partner.cinepulse.data.remote.models.Role
 import com.partner.cinepulse.data.remote.models.movieResponse
 import com.partner.cinepulse.ui.theme.AccentBlue
@@ -164,10 +166,11 @@ fun MovieInfoScreen(
     onNavigateBack: () -> Unit = {},
     id: Int,
     onArtistClick: (artistId: Int) -> Unit,
-    onWriteReviewClick : (movieId : Int)->Unit,
+    onWriteReviewClick: (movieId: Int) -> Unit,
     viewModel: MovieInfoViewModel = hiltViewModel()
 ) {
     val movieInfo by viewModel.movieInfo.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(id) {
         viewModel.getMovieDetails(id)
@@ -175,9 +178,11 @@ fun MovieInfoScreen(
 
     MovieInfoContent(
         onNavigateBack = onNavigateBack,
-        movieInfo      = movieInfo,
-        onArtistClick  = onArtistClick,
-        onWriteReviewClick= onWriteReviewClick
+        movieInfo = movieInfo,
+        uiState = uiState,
+        onArtistClick = onArtistClick,
+        onWriteReviewClick = onWriteReviewClick,
+        onLoadNextPage = { viewModel.loadNextReviewPage() }
     )
 }
 
@@ -186,12 +191,15 @@ fun MovieInfoScreen(
 fun MovieInfoContent(
     onNavigateBack: () -> Unit = {},
     movieInfo: movieResponse?,
+    uiState: MovieUiState,
     onArtistClick: (artistId: Int) -> Unit,
-    onWriteReviewClick : (movieId : Int)->Unit
+    onWriteReviewClick: (movieId: Int) -> Unit,
+    onLoadNextPage: () -> Unit
 ) {
     var reviewFilter by remember { mutableStateOf("Latest") }
-    val likedStates = remember { sampleReviews.map { mutableStateOf(false) } }
-    val likeCounts  = remember { sampleReviews.map { mutableStateOf(it.likes) } }
+    val likedStates = remember { androidx.compose.runtime.snapshots.SnapshotStateMap<Int, Boolean>() }
+//    val likedStates = remember { sampleReviews.map { mutableStateOf(false) } }.toMutableList()
+//    val likeCounts  = remember { sampleReviews.map { mutableStateOf(it.likes) } }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -265,17 +273,60 @@ fun MovieInfoContent(
             }
 
             // 6. Review cards
-            items(sampleReviews.indices.toList()) { idx ->
+//            items(sampleReviews.indices.toList()) { idx ->
+//                ReviewCard(
+//                    review    = sampleReviews[idx],
+//                    isLiked   = likedStates[idx].value,
+//                    likeCount = likeCounts[idx].value,
+//                    onLike    = {
+//                        likedStates[idx].value  = !likedStates[idx].value
+//                        likeCounts[idx].value  += if (likedStates[idx].value) 1 else -1
+//                    }
+//                )
+//                Spacer(modifier = Modifier.height(12.dp))
+//            }
+
+            items(uiState.reviews, key = { it.id }) { review ->
+                val isLiked = likedStates[review.id] ?: false
                 ReviewCard(
-                    review    = sampleReviews[idx],
-                    isLiked   = likedStates[idx].value,
-                    likeCount = likeCounts[idx].value,
+                    review    = review,
+                    isLiked   = isLiked as Boolean,
                     onLike    = {
-                        likedStates[idx].value  = !likedStates[idx].value
-                        likeCounts[idx].value  += if (likedStates[idx].value) 1 else -1
+                        val current = likedStates[review.id] ?: false
+                        likedStates[review.id] = !current
                     }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // 7. Pagination footer
+            item {
+                when {
+                    uiState.isReviewsLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = AccentBlue,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+                    !uiState.isLastReviewPage && uiState.reviews.isNotEmpty() -> {
+                        // Trigger next page when this item becomes visible
+                        LaunchedEffect(Unit) { onLoadNextPage() }
+                    }
+                    uiState.isLastReviewPage -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("No more reviews", color = TextSecondary, fontSize = 12.sp)
+                        }
+                    }
+                }
             }
         } // end LazyColumn
 
@@ -502,11 +553,24 @@ private fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
 // ── Review card ────────────────────────────────────────────────────────────────
 @Composable
 private fun ReviewCard(
-    review: UserReview,
+    review: Review,       // your API model
     isLiked: Boolean,
-    likeCount: Int,
     onLike: () -> Unit
 ) {
+    // Avatar color derived from user_id so it's stable
+    val avatarColor = remember(review.user_id) {
+        val colors = listOf(
+            Color(0xFF6A1B9A), Color(0xFF1565C0),
+            Color(0xFF2E7D32), Color(0xFF880E4F),
+            Color(0xFF1A237E), Color(0xFF4A148C)
+        )
+        colors[review.user_id % colors.size]
+    }
+    val initials = review.user_name
+        .substringBefore("@")
+        .take(2)
+        .uppercase()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -516,39 +580,31 @@ private fun ReviewCard(
             .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
             .padding(14.dp)
     ) {
-        // User header
         Row(
-            verticalAlignment     = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(review.avatarColor),
+                    .background(avatarColor),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text       = review.initials,
-                    color      = TextPrimary,
-                    fontSize   = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(text = initials, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
             Column {
                 Text(
-                    text       = review.name,
-                    color      = TextPrimary,
-                    fontSize   = 14.sp,
-                    fontWeight = FontWeight.SemiBold
+                    text = review.user_name.substringBefore("@"),
+                    color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     repeat(5) { i ->
                         Icon(
-                            imageVector        = if (i < review.stars) Icons.Default.Star else Icons.Outlined.StarOutline,
+                            imageVector = if (i < review.rating) Icons.Default.Star else Icons.Outlined.StarOutline,
                             contentDescription = null,
-                            tint               = if (i < review.stars) AccentGold else TextSecondary,
-                            modifier           = Modifier.size(13.dp)
+                            tint = if (i < review.rating) AccentGold else TextSecondary,
+                            modifier = Modifier.size(13.dp)
                         )
                     }
                 }
@@ -556,62 +612,32 @@ private fun ReviewCard(
         }
 
         Spacer(modifier = Modifier.height(10.dp))
-        Text(text = review.body, color = TextSecondary, fontSize = 13.sp, lineHeight = 20.sp)
+        Text(text = review.review_text, color = TextSecondary, fontSize = 13.sp, lineHeight = 20.sp)
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Footer: Like · Comment · Share
         Row(
-            modifier          = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Like
             Row(
-                verticalAlignment     = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier              = Modifier.clickable { onLike() }
+                modifier = Modifier.clickable { onLike() }
             ) {
                 Icon(
-                    imageVector        = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = "Like",
-                    tint               = if (isLiked) AccentRed else TextSecondary,
-                    modifier           = Modifier.size(17.dp)
-                )
-                Text(
-                    text  = "$likeCount",
-                    color = if (isLiked) AccentRed else TextSecondary,
-                    fontSize = 13.sp
+                    tint = if (isLiked) AccentRed else TextSecondary,
+                    modifier = Modifier.size(17.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.width(18.dp))
-
-            // Comment
-            Row(
-                verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier              = Modifier.clickable {}
-            ) {
-                Icon(
-                    imageVector        = Icons.Outlined.ChatBubbleOutline,
-                    contentDescription = "Comment",
-                    tint               = AccentBlue,
-                    modifier           = Modifier.size(17.dp)
-                )
-                Text(text = "${review.comments}", color = AccentBlue, fontSize = 13.sp)
-            }
-
             Spacer(modifier = Modifier.weight(1f))
-
-            // Share
-            Icon(
-                imageVector        = Icons.Default.Share,
-                contentDescription = "Share",
-                tint               = TextSecondary,
-                modifier           = Modifier
-                    .size(17.dp)
-                    .clickable {}
+            Text(
+                text = formatBirthDate(review.created_at),
+                color = TextSecondary,
+                fontSize = 11.sp
             )
         }
     }
@@ -624,9 +650,11 @@ private fun ReviewCard(
 fun MovieInfoContentPreview() {
     MovieInfoContent(
         onNavigateBack = {},
-        movieInfo      = previewMovieInfo,
-        onArtistClick  = {},
-        onWriteReviewClick = {}
+        movieInfo = previewMovieInfo,
+        onArtistClick = {},
+        onWriteReviewClick = {},
+        uiState = MovieUiState(),
+        onLoadNextPage = {}
     )
 }
 
@@ -635,8 +663,10 @@ fun MovieInfoContentPreview() {
 fun MovieInfoContentNullPreview() {
     MovieInfoContent(
         onNavigateBack = {},
-        movieInfo      = null,
-        onArtistClick  = {},
-        onWriteReviewClick = {}
+        movieInfo = null,
+        onArtistClick = {},
+        onWriteReviewClick = {},
+        uiState = MovieUiState() ,
+        onLoadNextPage = {}
     )
 }

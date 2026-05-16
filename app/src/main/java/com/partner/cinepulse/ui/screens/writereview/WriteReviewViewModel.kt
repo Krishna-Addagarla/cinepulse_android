@@ -66,7 +66,7 @@ class WriteReviewViewModel @Inject constructor(
                 val credit = credits.find { it.id == creditId } ?: return@mapNotNull null
                 performanceRating(
                     artist_id   = credit.id,
-                    role_id     = credit.role.id,   // ← Role.id from your Credit model
+                    role_id     = credit.role.id,
                     person_name = credit.name,
                     person_type = "cast",
                     rating      = rating.toDouble()
