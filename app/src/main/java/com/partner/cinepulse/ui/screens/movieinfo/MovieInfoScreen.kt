@@ -26,9 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -215,7 +213,7 @@ fun MovieInfoContent(
             // 2. Rating bar
             item {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-                    StarRatingRow(rating = 4.5f)
+                    StarRatingRow(rating = movieInfo?.overall_rating?:0.0)
                 }
                 HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
             }
@@ -439,7 +437,7 @@ private fun InfoChip(text: String) {
 
 // ── Star rating bar ────────────────────────────────────────────────────────────
 @Composable
-private fun StarRatingRow(rating: Float) {
+private fun StarRatingRow(rating: Double) {
     Row(
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)

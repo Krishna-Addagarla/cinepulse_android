@@ -181,7 +181,9 @@ fun AppNavigation(
                     onNavigateBack = {
                         navController.popBackStack()
                     },
-                    onReviewPosted = {},
+                    onReviewPosted = {
+                        navController.popBackStack()
+                    },
                     id
                 )
 

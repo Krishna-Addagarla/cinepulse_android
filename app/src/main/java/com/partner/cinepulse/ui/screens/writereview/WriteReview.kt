@@ -1,5 +1,6 @@
 package com.partner.cinepulse.ui.screens.review
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -88,7 +90,7 @@ private val previewMovieState: Resource<movieResponse> = Resource.Success(
         runtime_minutes = 169,
         overall_rating  = 4.8,
         total_ratings   = 12000,
-        genres          = listOf("Sci-Fi", "Drama"),
+        genres          = emptyList(),
         awards          = emptyList(),
         credits         = listOf(
             Credit(id = 1, name = "Matthew McConaughey", photo_url = "", role = Role("Actor", 1),           character_name = "Cooper", rating = 9.2, total_ratings = 800),
@@ -110,12 +112,16 @@ fun WriteReviewScreen(
     LaunchedEffect(Unit) {
         movieId?.let { viewModel.loadMovie(it) }
     }
-
+    val context = LocalContext.current
     val movieState by viewModel.movieState.collectAsState()
     val uiState    by viewModel.uiState.collectAsState()
 
     // Navigate away as soon as the review is successfully posted
     LaunchedEffect(uiState.isSubmitted) {
+        if (uiState.isSubmitted) Toast.makeText(context,"Review Submitted",Toast.LENGTH_SHORT).show()
+        else  Toast.makeText(context,"Review Submission Failed",Toast.LENGTH_SHORT).show()
+
+
         if (uiState.isSubmitted) onReviewPosted()
     }
 

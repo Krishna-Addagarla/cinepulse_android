@@ -1,7 +1,5 @@
 package com.partner.cinepulse.data.remote.models
 
-import com.google.type.DateTime
-
 data class searchResponse(
     val results : List<searchItem>,
     val total : Int,
@@ -74,9 +72,14 @@ data class movieResponse(
     val id: Int,
     val overall_rating: Double,
     val total_ratings: Int,
-    val genres: List<String>,
+    val genres: List<Genres>,
     val credits: List<Credit>,
     val awards: List<Any> // Using Any since awards array appears empty, can be replaced with specific type if needed
+)
+
+data class Genres(
+    val name: String,
+    val id: Int
 )
 
 data class Credit(
@@ -145,10 +148,10 @@ data class Review(
     val user_id: Int,
     val user_name: String,
     val created_at: String,
-    val performance_ratings: List<PerformanceRating>
+    val performance_ratings: List<ArtistsPerformanceRatings>
 )
 
-data class PerformanceRating(
+data class ArtistsPerformanceRatings(
     val artistId: Int,
     val artistName: String,
     val role: Role,

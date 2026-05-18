@@ -127,7 +127,7 @@ private fun createSampleMovie(
         id = name.hashCode(),
         overall_rating = 0.0,
         total_ratings = 0,
-        genres = listOf(genre),
+        genres = emptyList(),
         credits = emptyList(),
         awards = emptyList()
     )
