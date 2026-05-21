@@ -2,6 +2,8 @@ package com.partner.cinepulse.data.repositoryImpl
 
 import com.partner.cinepulse.data.remote.apis.fanClubApiService
 import com.partner.cinepulse.data.remote.models.FanClubResponse
+import com.partner.cinepulse.data.remote.models.createFanClub
+import com.partner.cinepulse.data.remote.models.createFanClubResponse
 import com.partner.cinepulse.data.repository.FanClubRepository
 import com.partner.cinepulse.utils.Resource
 import kotlinx.coroutines.flow.Flow
@@ -32,5 +34,19 @@ class FanClubRepositoryImpl @Inject constructor(
         }
 
 
+    }
+
+    override suspend fun createFanClub(createFanClub : createFanClub): Flow<Resource<createFanClubResponse>> = flow{
+        try {
+            emit(Resource.Loading())
+            val response = fanClubApiService.createFanClub(createFanClub)
+
+        }catch (e: HttpException){
+            emit(Resource.Error(e.message()))
+        }catch (e: IOException){
+            emit(Resource.Error("Network Error : ${e.message}"))
+        }catch (e: Exception){
+            emit(Resource.Error("Unexpected Error : ${e.message}"))
+        }
     }
 }

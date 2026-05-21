@@ -1,5 +1,6 @@
 package com.partner.cinepulse.ui.screens.fanclub
 
+import android.graphics.Paint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,7 +17,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -172,6 +179,7 @@ private val sampleSuggestedGroups = listOf(
 @Composable
 fun DiscussionsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateCreateFC : () -> Unit,
     onGroupClick: (Long) -> Unit = {},
     onDiscussionClick: (String) -> Unit = {},
     onSearchClick: () -> Unit = {},
@@ -185,6 +193,7 @@ fun DiscussionsScreen(
         userFanClubs = userFanClubs,
         suggestedGroups = sampleSuggestedGroups,
         trendingDiscussions = sampleTrendingDiscussions,
+        onNavigateCreateFC = onNavigateCreateFC,
         onGroupClick = onGroupClick,
         onDiscussionClick = onDiscussionClick,
         onNavigateBack = onNavigateBack,
@@ -201,6 +210,7 @@ fun DiscussionsScreenContent(
     userFanClubs: List<FanClubResponse>,
     suggestedGroups: List<FanClubResponse>,
     trendingDiscussions: List<TrendingDiscussion>,
+    onNavigateCreateFC : () -> Unit,
     onGroupClick: (Long) -> Unit,            // FIX: Long
     onDiscussionClick: (String) -> Unit,
     onNavigateBack: () -> Unit,
@@ -209,65 +219,103 @@ fun DiscussionsScreenContent(
     onProfileClick: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BgDark)
-    ) {
-        TopBar(
-            title = "Discussions",
-            showSearchIcon = true,
-            showNotificationIcon = false,
-            showProfileIcon = false,
-            showBackButton = false,
-            onBackClick = onNavigateBack,
-            onSearchClick = onSearchClick,
-            onNotificationClick = onNotificationClick,
-            onProfileClick = onProfileClick
-        )
-
-        // ── Tab row ───────────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BgDark)
         ) {
-            listOf("My Groups", "Discover").forEachIndexed { index, label ->
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(if (selectedTab == index) AccentBlue else DarkSlate)
-                        .border(
-                            width = if (selectedTab == index) 0.dp else 1.dp,
-                            color = if (selectedTab == index) Color.Transparent else CardBorder,
-                            shape = RoundedCornerShape(20.dp)
+            TopBar(
+                title = "Discussions",
+                showSearchIcon = true,
+                showNotificationIcon = false,
+                showProfileIcon = false,
+                showBackButton = false,
+                onBackClick = onNavigateBack,
+                onSearchClick = onSearchClick,
+                onNotificationClick = onNotificationClick,
+                onProfileClick = onProfileClick
+            )
+
+            // ── Tab row ───────────────────────────────────────────────────────────
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                listOf("My Groups", "Discover").forEachIndexed { index, label ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (selectedTab == index) AccentBlue else DarkSlate)
+                            .border(
+                                width = if (selectedTab == index) 0.dp else 1.dp,
+                                color = if (selectedTab == index) Color.Transparent else CardBorder,
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .clickable { selectedTab = index }
+                            .padding(horizontal = 20.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            color = if (selectedTab == index) TextPrimary else TextSecondary,
+                            fontSize = 13.sp,
+                            fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal
                         )
-                        .clickable { selectedTab = index }
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = label,
-                        color = if (selectedTab == index) TextPrimary else TextSecondary,
-                        fontSize = 13.sp,
-                        fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal
+                    }
+                }
+            }
+
+            Box(modifier = Modifier.weight(1f)) {
+                when (selectedTab) {
+                    0 -> MyGroupsContent(
+                        userFanClubs        = userFanClubs,
+                        suggestedGroups     = suggestedGroups,
+                        trendingDiscussions = trendingDiscussions,
+                        onGroupClick        = onGroupClick,
+                        onDiscussionClick   = onDiscussionClick
+                    )
+                    1 -> DiscoverContent(
+                        suggestedGroups     = suggestedGroups,
+                        trendingDiscussions = trendingDiscussions,
+                        onGroupClick        = onGroupClick,
+                        onDiscussionClick   = onDiscussionClick
                     )
                 }
             }
-        }
 
-        when (selectedTab) {
-            0 -> MyGroupsContent(
-                userFanClubs = userFanClubs,
-                suggestedGroups = suggestedGroups,
-                trendingDiscussions = trendingDiscussions,
-                onGroupClick = onGroupClick,
-                onDiscussionClick = onDiscussionClick
-            )
-            1 -> DiscoverContent(
-                suggestedGroups = suggestedGroups,
-                trendingDiscussions = trendingDiscussions,
-                onGroupClick = onGroupClick,
-                onDiscussionClick = onDiscussionClick
+        }
+//        Row(
+//            modifier = Modifier
+//                .align(Alignment.BottomEnd)
+//                .padding(end = 20.dp, bottom = 120.dp)
+//                .clip(RoundedCornerShape(28.dp))
+//                .background(color = AccentBlue)
+//                .clickable {onNavigateCreateFC() }
+//                .padding(horizontal = 18.dp, vertical = 14.dp),
+//            verticalAlignment        = Alignment.CenterVertically,
+//            horizontalArrangement    = Arrangement.spacedBy(8.dp)
+//        ) {
+//            Icon(
+//                imageVector = Icons.Default.Add,
+//                contentDescription = "Create",
+//                modifier = Modifier.size(24.dp),
+//                tint = Color.White
+//            )
+//        }
+
+        FloatingActionButton(
+            onClick = onNavigateCreateFC,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 130.dp),
+            containerColor = AccentBlue,
+            contentColor = Color.White,
+            shape = CircleShape
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Create",
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -350,6 +398,18 @@ private fun MyGroupsContent(
                     onClick = { onGroupClick(group.id) }   // FIX: group.id is Long, matches
                 )
             }
+        }
+    }else{
+        Box(
+            modifier         = Modifier.fillMaxSize().padding(bottom = 80.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text       = "No Groups Found",
+                color      = TextPrimary,
+                fontSize   = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -575,6 +635,7 @@ fun DiscussionsScreenMyGroupsPreview() {
         userFanClubs = sampleSuggestedGroups.take(2),
         suggestedGroups = sampleSuggestedGroups,
         trendingDiscussions = sampleTrendingDiscussions,
+        onNavigateCreateFC = {},
         onGroupClick = {},
         onDiscussionClick = {},
         onNavigateBack = {}
@@ -588,6 +649,7 @@ fun DiscussionsScreenEmptyGroupsPreview() {
         userFanClubs = emptyList(),
         suggestedGroups = sampleSuggestedGroups,
         trendingDiscussions = sampleTrendingDiscussions,
+        onNavigateCreateFC = {},
         onGroupClick = {},
         onDiscussionClick = {},
         onNavigateBack = {}

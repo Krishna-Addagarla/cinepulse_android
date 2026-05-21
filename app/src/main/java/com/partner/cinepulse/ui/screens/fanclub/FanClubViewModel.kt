@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
 import com.partner.cinepulse.data.remote.models.FanClubResponse
+import com.partner.cinepulse.data.remote.models.createFanClub
+import com.partner.cinepulse.data.remote.models.createFanClubResponse
 import com.partner.cinepulse.data.repository.FanClubRepository
 import com.partner.cinepulse.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +30,9 @@ class FanClubViewModel @Inject constructor(
 
     private val _userFanClubs = MutableStateFlow<List<FanClubResponse>>(emptyList())
     val userFanClubs : StateFlow<List<FanClubResponse>> = _userFanClubs
+
+    private val _createFanClub = MutableStateFlow<createFanClubResponse?>(null)
+    val createFanClub : StateFlow<createFanClubResponse?> = _createFanClub
 
     init {
         getUserFanClubs()
@@ -56,6 +61,31 @@ class FanClubViewModel @Inject constructor(
                 }
 
 
+            }
+        }
+    }
+
+    fun createFanClub(createFanClub : createFanClub){
+        viewModelScope.launch {
+            fanClubRepository.createFanClub(createFanClub).collect {result ->
+                when(result){
+                    is Resource.Loading<*> -> _uistate.update {
+                        it.copy(isLoading = true)
+                    }
+
+                    is Resource.Success ->{
+                        result.data.let { data ->
+                            _createFanClub.value = data
+                        }
+
+                        _uistate.update {
+                            it.copy(isLoading = false)
+                        }
+                    }
+                    is Resource.Error<*> -> _uistate.update {
+                        it.copy(isLoading = false, errorMessage = result.message)
+                    }
+                }
             }
         }
     }

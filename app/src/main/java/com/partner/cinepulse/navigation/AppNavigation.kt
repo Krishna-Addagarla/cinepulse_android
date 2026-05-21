@@ -17,6 +17,7 @@ import com.partner.cinepulse.ui.screens.actorinfo.ActorInfoScreen
 import com.partner.cinepulse.ui.screens.auth.AuthScreen
 import com.partner.cinepulse.ui.screens.auth.OtpVerificationScreen
 import com.partner.cinepulse.ui.screens.chatbot.ChatbotScreen
+import com.partner.cinepulse.ui.screens.fanclub.CreateFanClubScreen
 import com.partner.cinepulse.ui.screens.fanclub.DiscussionsScreen
 import com.partner.cinepulse.ui.screens.home.HomeScreen
 import com.partner.cinepulse.ui.screens.movieinfo.MovieInfoScreen
@@ -121,6 +122,9 @@ fun AppNavigation(
                 DiscussionsScreen(
                     onNavigateBack = {
                         navController.popBackStack()
+                    },
+                    onNavigateCreateFC = {
+                        navController.navigate(Screen.CreateFanClub.route)
                     }
                 )
             }
@@ -187,6 +191,14 @@ fun AppNavigation(
                     id
                 )
 
+            }
+
+            composable(Screen.CreateFanClub.route) {
+                CreateFanClubScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
         }

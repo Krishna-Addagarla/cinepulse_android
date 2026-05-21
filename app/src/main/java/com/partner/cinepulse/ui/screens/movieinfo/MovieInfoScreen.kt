@@ -270,20 +270,6 @@ fun MovieInfoContent(
                 }
             }
 
-            // 6. Review cards
-//            items(sampleReviews.indices.toList()) { idx ->
-//                ReviewCard(
-//                    review    = sampleReviews[idx],
-//                    isLiked   = likedStates[idx].value,
-//                    likeCount = likeCounts[idx].value,
-//                    onLike    = {
-//                        likedStates[idx].value  = !likedStates[idx].value
-//                        likeCounts[idx].value  += if (likedStates[idx].value) 1 else -1
-//                    }
-//                )
-//                Spacer(modifier = Modifier.height(12.dp))
-//            }
-
             items(uiState.reviews, key = { it.id }) { review ->
                 val isLiked = likedStates[review.id] ?: false
                 ReviewCard(
