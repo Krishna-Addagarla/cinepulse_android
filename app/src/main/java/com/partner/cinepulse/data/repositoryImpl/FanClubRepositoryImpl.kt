@@ -40,6 +40,11 @@ class FanClubRepositoryImpl @Inject constructor(
         try {
             emit(Resource.Loading())
             val response = fanClubApiService.createFanClub(createFanClub)
+            if (response.isSuccessful && response.body()!=null){
+                emit(Resource.Success(response.body()!!))
+            }else{
+                emit(Resource.Error(response.message()?:" Failed to Create Your FanClub"))
+            }
 
         }catch (e: HttpException){
             emit(Resource.Error(e.message()))

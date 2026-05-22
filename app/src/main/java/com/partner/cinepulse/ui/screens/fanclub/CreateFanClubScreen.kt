@@ -1,6 +1,6 @@
 package com.partner.cinepulse.ui.screens.fanclub
 
-import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,12 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.partner.cinepulse.data.remote.models.createFanClub
 import com.partner.cinepulse.ui.theme.AccentBlue
 import com.partner.cinepulse.ui.theme.BgDark
 import com.partner.cinepulse.ui.theme.CardBorder
@@ -34,7 +36,6 @@ import com.partner.cinepulse.ui.theme.TextPrimary
 import com.partner.cinepulse.utils.ImagePickerState
 import com.partner.cinepulse.utils.rememberImagePicker
 
-// ── colour tokens ─────────────────────────────────────────────────────────
 private val AccentColor = Color(0xFFE5A100)
 private val SubtleText  = Color(0xFF9E9E9E)
 private val InputBg     = Color(0xFF1C1C1E)
@@ -46,48 +47,117 @@ fun CreateFanClubScreen(
     onNavigateBack: () -> Unit,
     viewModel: FanClubViewModel = hiltViewModel()
 ) {
-    CreateFanClubScreenContent(onNavigateBack)
+    CreateFanClubScreenContent(
+        onNavigateBack = onNavigateBack,
+        viewModel      = viewModel
+    )
 }
 
 // ── screen ────────────────────────────────────────────────────────────────
 @Composable
-fun CreateFanClubScreenContent(onNavigateBack: () -> Unit) {
+fun CreateFanClubScreenContent(
+    onNavigateBack: () -> Unit,
+    viewModel: FanClubViewModel? = null
+) {
+    val context = LocalContext.current
 
-    /* ── form state ── */
+    // ── form state ──
     var fanClubName        by remember { mutableStateOf("") }
     var fanClubDescription by remember { mutableStateOf("") }
     var tagInput           by remember { mutableStateOf("") }
     val tags               = remember { mutableStateListOf<String>() }
 
-    /* ── image pickers (uses helper) ── */
+    // ── pending upload tracking ──
+    var pendingProfileUrl by remember { mutableStateOf<String?>(null) }
+    var pendingCoverUrl   by remember { mutableStateOf<String?>(null) }
+    var submitRequested   by remember { mutableStateOf(false) }
+    var lastUploadTag     by remember { mutableStateOf<String?>(null) }
+
+    // ── ViewModel state ──
+    val uploadImage by viewModel?.uploadImage?.collectAsState()
+        ?: remember { mutableStateOf(null) }
+    val uiState by viewModel?.uistate?.collectAsState()
+        ?: remember { mutableStateOf(FanClubUiState()) }
+
+    // ── ONE-SHOT navigation: collect from Channel, not a StateFlow ──
+    // This fires exactly once per successful creation, regardless of recomposition.
+    LaunchedEffect(viewModel) {
+        viewModel?.navigateBack?.collect {
+            Toast.makeText(context, "FanClub created successfully!", Toast.LENGTH_SHORT).show()
+            onNavigateBack()
+        }
+    }
+
+    // ── image pickers ──
     val profilePicker = rememberImagePicker(
-        onUpload = { uri ->
-            // TODO: replace with your real upload call, e.g.:
-            // myRepository.uploadProfileImage(uri)
-            Result.success("https://cdn.example.com/profile/$uri")
+        onUpload = { multipart ->
+            lastUploadTag = "profile"
+            viewModel?.uploadImage(multipart)
+            Result.success("")
         }
     )
     val coverPicker = rememberImagePicker(
-        onUpload = { uri ->
-            // TODO: replace with your real upload call
-            Result.success("https://cdn.example.com/cover/$uri")
+        onUpload = { multipart ->
+            lastUploadTag = "cover"
+            viewModel?.uploadImage(multipart)
+            Result.success("")
         }
     )
+
+    // ── react to upload result ──
+    LaunchedEffect(uploadImage) {
+        val url = uploadImage?.image_url ?: return@LaunchedEffect
+        when (lastUploadTag) {
+            "profile" -> pendingProfileUrl = url
+            "cover"   -> pendingCoverUrl   = url
+        }
+        lastUploadTag = null
+        viewModel?.clearUploadImage()
+
+        trySubmitIfReady(
+            submitRequested       = submitRequested,
+            pendingProfileUrl     = pendingProfileUrl,
+            pendingCoverUrl       = pendingCoverUrl,
+            profilePickerHasImage = profilePicker.state.hasImage,
+            coverPickerHasImage   = coverPicker.state.hasImage,
+            onReady               = { _, _ ->
+                submitRequested = false   // prevent double-fire
+                viewModel?.createFanClub(
+                    createFanClub(
+                        name        = fanClubName,
+                        description = fanClubDescription,
+                        photo_url   = pendingProfileUrl ?: "",
+                        cover_url   = pendingCoverUrl   ?: "",
+                        is_private  = false,
+                        artist_id   = 0,
+                        movie_id    = 0,
+                        tvShow_id   = 0
+                    )
+                )
+            }
+        )
+    }
+
+    // ── error toast ──
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(BgDark)
     ) {
-
-        /* ── top bar ── */
+        // ── top bar ──
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.Black)
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalAlignment    = Alignment.CenterVertically,
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
@@ -114,7 +184,7 @@ fun CreateFanClubScreenContent(onNavigateBack: () -> Unit) {
             )
         }
 
-        /* ── scrollable form ── */
+        // ── scrollable form ──
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -122,26 +192,22 @@ fun CreateFanClubScreenContent(onNavigateBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-
-            /* 1 ── Cover picture ──────────────────────────────────────── */
             SectionLabel("Cover Picture")
             CoverPicturePicker(
                 state   = coverPicker.state,
                 onPick  = { coverPicker.launch() },
-                onClear = { coverPicker.clear() }
+                onClear = { coverPicker.clear(); pendingCoverUrl = null }
             )
             UploadStatusRow(coverPicker.state)
 
-            /* 2 ── Profile picture ────────────────────────────────────── */
             SectionLabel("Profile Picture")
             ProfilePicturePicker(
                 state   = profilePicker.state,
                 onPick  = { profilePicker.launch() },
-                onClear = { profilePicker.clear() }
+                onClear = { profilePicker.clear(); pendingProfileUrl = null }
             )
             UploadStatusRow(profilePicker.state)
 
-            /* 3 ── FanClub name ───────────────────────────────────────── */
             SectionLabel("FanClub Name")
             StyledTextField(
                 value         = fanClubName,
@@ -149,7 +215,6 @@ fun CreateFanClubScreenContent(onNavigateBack: () -> Unit) {
                 placeholder   = "e.g. House of Stark Fans"
             )
 
-            /* 4 ── Description ────────────────────────────────────────── */
             SectionLabel("Description")
             StyledTextField(
                 value         = fanClubDescription,
@@ -159,7 +224,6 @@ fun CreateFanClubScreenContent(onNavigateBack: () -> Unit) {
                 maxLines      = 6
             )
 
-            /* 5 ── Tags (optional) ────────────────────────────────────── */
             SectionLabel("Tag Artist / Movie / TV Show  (optional)")
             TagInputField(
                 input    = tagInput,
@@ -173,30 +237,82 @@ fun CreateFanClubScreenContent(onNavigateBack: () -> Unit) {
                 onRemove = { tags.remove(it) }
             )
 
-            /* 6 ── Submit ─────────────────────────────────────────────── */
             Button(
                 onClick = {
-                    // trigger uploads then submit
-                    profilePicker.upload()
-                    coverPicker.upload()
-                    // TODO: observe uploadedUrl on both pickers, then call your ViewModel
+                    if (fanClubName.isBlank()) {
+                        Toast.makeText(context, "Please enter a FanClub name", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    submitRequested   = true
+                    pendingProfileUrl = null
+                    pendingCoverUrl   = null
+
+                    val needsProfileUpload = profilePicker.state.hasImage
+                    val needsCoverUpload   = coverPicker.state.hasImage
+
+                    if (needsProfileUpload) profilePicker.upload()
+                    if (needsCoverUpload)   coverPicker.upload()
+
+                    if (!needsProfileUpload && !needsCoverUpload) {
+                        submitRequested = false   // won't go through LaunchedEffect path
+                        viewModel?.createFanClub(
+                            createFanClub(
+                                name        = fanClubName,
+                                description = fanClubDescription,
+                                photo_url   = "",
+                                cover_url   = "",
+                                is_private  = false,
+                                artist_id   = 0,
+                                movie_id    = 0,
+                                tvShow_id   = 0
+                            )
+                        )
+                    }
                 },
+                // Disable only while the create/upload is in progress, not during list fetch.
+                enabled  = !uiState.isSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape  = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
             ) {
-                Text(
-                    text       = "Create FanClub",
-                    color      = TextPrimary,
-                    fontSize   = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (uiState.isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(22.dp),
+                        color       = TextPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text       = "Create FanClub",
+                        color      = TextPrimary,
+                        fontSize   = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(Modifier.height(32.dp))
         }
+    }
+}
+
+// ── submit gate ───────────────────────────────────────────────────────────
+private fun trySubmitIfReady(
+    submitRequested      : Boolean,
+    pendingProfileUrl    : String?,
+    pendingCoverUrl      : String?,
+    profilePickerHasImage: Boolean,
+    coverPickerHasImage  : Boolean,
+    onReady              : (profileUrl: String, coverUrl: String) -> Unit
+) {
+    if (!submitRequested) return
+    val profileReady = !profilePickerHasImage || pendingProfileUrl != null
+    val coverReady   = !coverPickerHasImage   || pendingCoverUrl   != null
+    if (profileReady && coverReady) {
+        onReady(pendingProfileUrl ?: "", pendingCoverUrl ?: "")
     }
 }
 
@@ -232,7 +348,6 @@ private fun CoverPicturePicker(
             ) {
                 Text("Tap to change", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
             }
-            // clear button
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -272,7 +387,7 @@ private fun ProfilePicturePicker(
                 .size(80.dp)
                 .clip(CircleShape)
                 .background(InputBg)
-                .border(2.dp, if (state.hasImage) AccentColor else CardBorder, CircleShape)
+                .border(2.dp, if (state.hasImage) AccentBlue else CardBorder, CircleShape)
                 .clickable { onPick() },
             contentAlignment = Alignment.Center
         ) {
@@ -302,7 +417,7 @@ private fun ProfilePicturePicker(
             if (state.hasImage) {
                 Text(
                     text     = "Clear",
-                    color    = AccentColor,
+                    color    = AccentBlue,
                     fontSize = 12.sp,
                     modifier = Modifier.clickable { onClear() }
                 )
@@ -320,19 +435,17 @@ private fun UploadStatusRow(state: ImagePickerState) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             CircularProgressIndicator(
-                modifier  = Modifier.size(14.dp),
-                color     = AccentColor,
+                modifier    = Modifier.size(14.dp),
+                color       = AccentBlue,
                 strokeWidth = 2.dp
             )
             Text("Uploading…", color = SubtleText, fontSize = 12.sp)
         }
-
         state.uploadError != null -> Text(
             text     = "⚠ ${state.uploadError}",
             color    = Color(0xFFEF5350),
             fontSize = 12.sp
         )
-
         state.uploadedUrl?.isNotEmpty() == true -> Text(
             text     = "✓ Uploaded successfully",
             color    = Color(0xFF66BB6A),
@@ -363,11 +476,11 @@ private fun TagInputField(
                 placeholder   = { Text("e.g. BTS, Inception, Breaking Bad", color = SubtleText, fontSize = 13.sp) },
                 shape         = RoundedCornerShape(12.dp),
                 colors        = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor      = AccentColor,
+                    focusedBorderColor      = AccentBlue,
                     unfocusedBorderColor    = CardBorder,
                     focusedTextColor        = TextPrimary,
                     unfocusedTextColor      = TextPrimary,
-                    cursorColor             = AccentColor,
+                    cursorColor             = AccentBlue,
                     focusedContainerColor   = InputBg,
                     unfocusedContainerColor = InputBg
                 ),
@@ -378,7 +491,7 @@ private fun TagInputField(
                 enabled        = input.trim().isNotEmpty(),
                 shape          = RoundedCornerShape(12.dp),
                 colors         = ButtonDefaults.buttonColors(
-                    containerColor         = AccentColor,
+                    containerColor         = AccentBlue,
                     disabledContainerColor = CardDark
                 ),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
@@ -406,7 +519,7 @@ private fun TagChip(label: String, onRemove: () -> Unit) {
         modifier = Modifier
             .clip(RoundedCornerShape(50.dp))
             .background(ChipBg)
-            .border(1.dp, AccentColor.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
+            .border(1.dp, AccentBlue.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -441,11 +554,11 @@ private fun StyledTextField(
         minLines      = minLines,
         maxLines      = maxLines,
         colors        = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor      = AccentColor,
+            focusedBorderColor      = AccentBlue,
             unfocusedBorderColor    = CardBorder,
             focusedTextColor        = TextPrimary,
             unfocusedTextColor      = TextPrimary,
-            cursorColor             = AccentColor,
+            cursorColor             = AccentBlue,
             focusedContainerColor   = InputBg,
             unfocusedContainerColor = InputBg
         )
@@ -467,5 +580,5 @@ private fun SectionLabel(text: String) {
 @Preview(showBackground = true)
 @Composable
 fun CreateFanClubPreview() {
-    CreateFanClubScreenContent(onNavigateBack = {})
+    CreateFanClubScreenContent(onNavigateBack = {}, viewModel = null)
 }
