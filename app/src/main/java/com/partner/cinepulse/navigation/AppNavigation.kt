@@ -139,9 +139,13 @@ fun AppNavigation(
 
             composable (Screen.Profile.route){
                 UserInfoScreen(
-                    onLogout = {},
                     onBackClick = {
                         navController.popBackStack()
+                    },
+                    onLogOut = {
+                        navController.navigate(Screen.Auth.route){
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 )
             }

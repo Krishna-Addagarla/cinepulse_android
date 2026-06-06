@@ -36,8 +36,7 @@ class TokenRepository @Inject constructor(
     suspend fun isLoggedIn(): Boolean = tokenDao.isLoggedIn()
 
     // Clear all tokens
-    suspend fun clearTokens
-                () {
+    suspend fun clearTokens() {
         tokenDao.clearTokens()
     }
 }
