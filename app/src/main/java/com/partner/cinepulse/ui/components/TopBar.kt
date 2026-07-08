@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.partner.cinepulse.ui.theme.AccentBlue
+import com.partner.cinepulse.ui.theme.BgDark
 
 @Composable
 fun TopBar(
@@ -35,7 +36,7 @@ fun TopBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.Black)
+            .background(BgDark)
             .windowInsetsPadding(WindowInsets.statusBars)
     ) {
         Row(
