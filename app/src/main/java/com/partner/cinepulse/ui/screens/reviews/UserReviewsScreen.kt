@@ -2,8 +2,13 @@ package com.partner.cinepulse.ui.screens.reviews
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -136,7 +141,7 @@ fun UserReviewsScreen(
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(list) { review ->
-                                Card(
+                                Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
@@ -145,50 +150,79 @@ fun UserReviewsScreen(
                                             } else if (review.tvshow_id != null) {
                                                 onTvShowClick(review.tvshow_id)
                                             }
-                                        },
-                                    colors = CardDefaults.cardColors(containerColor = CardDark),
-                                    border = BorderStroke(1.dp, CardBorder)
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = review.movie_title ?: review.tvshow_title ?: "Review",
-                                                color = TextPrimary,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 16.sp
-                                            )
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Star,
-                                                    contentDescription = "Rating",
-                                                    tint = AccentGold,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = "${review.rating}",
-                                                    color = TextPrimary,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    fontSize = 14.sp
-                                                )
-                                            }
                                         }
-                                        Spacer(modifier = Modifier.height(8.dp))
+                                        .padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    // User Avatar representation
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(AccentBlue.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
                                         Text(
-                                            text = review.review_text ?: "",
-                                            color = TextSecondary,
-                                            fontSize = 14.sp
+                                            text = "👤",
+                                            fontSize = 16.sp
                                         )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = review.time_ago,
-                                            color = TextSecondary.copy(alpha = 0.6f),
-                                            fontSize = 11.sp
-                                        )
+                                    }
+
+                                    // Chat bubble card
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                                            .background(Color(0xDC0F1623))
+                                            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(topStart = 0.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                                            .padding(14.dp)
+                                    ) {
+                                        Column {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = review.movie_title ?: review.tvshow_title ?: "Review",
+                                                    color = TextPrimary,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 15.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Star,
+                                                        contentDescription = null,
+                                                        tint = AccentGold,
+                                                        modifier = Modifier.size(14.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(3.dp))
+                                                    Text(
+                                                        text = "${review.rating}",
+                                                        color = TextPrimary,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text(
+                                                text = review.review_text ?: "",
+                                                color = TextSecondary,
+                                                fontSize = 13.sp,
+                                                lineHeight = 18.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = review.time_ago,
+                                                color = TextSecondary.copy(alpha = 0.5f),
+                                                fontSize = 10.sp
+                                            )
+                                        }
                                     }
                                 }
                             }

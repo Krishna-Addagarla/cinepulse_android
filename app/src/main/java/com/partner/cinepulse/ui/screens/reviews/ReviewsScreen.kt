@@ -324,8 +324,8 @@ private fun ReviewCard(review: FeaturedReview) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(CardDark)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .background(Color(0xDC0F1623))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
     ) {
         // ── Movie banner ──────────────────────────────────────────────────────
         Box(
@@ -361,100 +361,115 @@ private fun ReviewCard(review: FeaturedReview) {
 
         // ── Review body ───────────────────────────────────────────────────────
         Column(modifier = Modifier.padding(14.dp)) {
-
-            // Critic row
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Avatar
+                // Critic Avatar on the left
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(AccentGold),
+                        .background(AccentGold.copy(alpha = 0.12f))
+                        .border(1.dp, AccentGold.copy(alpha = 0.25f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = review.criticEmoji, fontSize = 18.sp)
+                    Text(text = review.criticEmoji, fontSize = 20.sp)
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                // Chat bubble container on the right
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                        .background(Color(0xFF141B27))
+                        .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(topStart = 0.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = review.criticName,
+                                        color = TextPrimary,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(review.badgeColor.copy(alpha = 0.15f))
+                                            .border(1.dp, review.badgeColor.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = review.criticBadge,
+                                            color = review.badgeColor,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = review.timeAgo,
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = AccentGold,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = review.rating.toString(),
+                                    color = TextPrimary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
                         Text(
-                            text = review.criticName,
+                            text = review.headline,
                             color = TextPrimary,
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 20.sp
                         )
-                        // Badge
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(review.badgeColor)
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = review.criticBadge,
-                                color = TextPrimary,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    Text(
-                        text = review.timeAgo,
-                        color = TextSecondary,
-                        fontSize = 11.sp
-                    )
-                }
 
-                // Rating
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = AccentGold,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = review.rating.toString(),
-                        color = TextPrimary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = review.body,
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Headline
-            Text(
-                text = review.headline,
-                color = TextPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 22.sp
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Body
-            Text(
-                text = review.body,
-                color = TextSecondary,
-                fontSize = 13.sp,
-                lineHeight = 20.sp
-            )
-
             Spacer(modifier = Modifier.height(14.dp))
 
-            HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
+            HorizontalDivider(color = Color.White.copy(alpha = 0.05f), thickness = 0.5.dp)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -497,7 +512,8 @@ private fun ReviewCard(review: FeaturedReview) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(SecondBlue)
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
                         .clickable { }
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
