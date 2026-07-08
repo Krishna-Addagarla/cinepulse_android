@@ -174,60 +174,97 @@ fun UserInfoScreen(
             // Activity Section
             SectionLabel("Activity")
 
-            ProfileMenuItem(
-                icon = Icons.Default.Star,
-                label = "Your Reviews ($reviewsCount)",
-                iconTint = PrimaryColor,
-                onClick = onNavigateToReviews
-            )
-            ProfileMenuItem(
-                icon = Icons.Default.Article,
-                label = "Your Posts (${userPosts.size})",
-                iconTint = PrimaryColor,
-                onClick = { showPostsSheet = true }
-            )
-            ProfileMenuItem(
-                icon = Icons.Default.List,
-                label = "Your Lists ($listsCount)",
-                iconTint = PrimaryColor,
-                onClick = onNavigateToLists
-            )
-            ProfileMenuItem(
-                icon = Icons.Default.Favorite,
-                label = "Your Favorites ($favoritesCount)",
-                iconTint = PrimaryColor,
-                onClick = onNavigateToFavorites
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatsCard(
+                    title = "Reviews",
+                    count = reviewsCount,
+                    icon = Icons.Default.Star,
+                    color = AccentGold,
+                    modifier = Modifier.weight(1f),
+                    onClick = onNavigateToReviews
+                )
+                StatsCard(
+                    title = "Posts",
+                    count = userPosts.size,
+                    icon = Icons.Default.Article,
+                    color = AccentBlue,
+                    modifier = Modifier.weight(1f),
+                    onClick = { showPostsSheet = true }
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatsCard(
+                    title = "Lists",
+                    count = listsCount,
+                    icon = Icons.Default.List,
+                    color = AccentGreen,
+                    modifier = Modifier.weight(1f),
+                    onClick = onNavigateToLists
+                )
+                StatsCard(
+                    title = "Favorites",
+                    count = favoritesCount,
+                    icon = Icons.Default.Favorite,
+                    color = AccentRed,
+                    modifier = Modifier.weight(1f),
+                    onClick = onNavigateToFavorites
+                )
+            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Settings Section
             SectionLabel("Settings")
 
-            ProfileMenuItem(
-                icon = Icons.Default.Edit,
-                label = "Edit Interests & Language",
-                iconTint = AccentBlue,
-                onClick = onEditPreferences
-            )
-            ProfileMenuItem(
-                icon = Icons.Default.Settings,
-                label = "Settings",
-                iconTint = TextSecondary,
-                onClick = onNavigateToSettings
-            )
-            ProfileMenuItem(
-                icon = Icons.Default.Notifications,
-                label = "Notifications",
-                iconTint = TextSecondary,
-                onClick = {}
-            )
-            ProfileMenuItem(
-                icon = Icons.Default.Lock,
-                label = "Privacy & Security",
-                iconTint = TextSecondary,
-                onClick = {}
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xDC0F1623))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+            ) {
+                Column {
+                    ProfileMenuItem(
+                        icon = Icons.Default.Edit,
+                        label = "Edit Interests & Language",
+                        iconTint = AccentBlue,
+                        onClick = onEditPreferences
+                    )
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.05f), thickness = 0.5.dp)
+                    ProfileMenuItem(
+                        icon = Icons.Default.Settings,
+                        label = "Settings",
+                        iconTint = TextSecondary,
+                        onClick = onNavigateToSettings
+                    )
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.05f), thickness = 0.5.dp)
+                    ProfileMenuItem(
+                        icon = Icons.Default.Notifications,
+                        label = "Notifications",
+                        iconTint = TextSecondary,
+                        onClick = {}
+                    )
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.05f), thickness = 0.5.dp)
+                    ProfileMenuItem(
+                        icon = Icons.Default.Lock,
+                        label = "Privacy & Security",
+                        iconTint = TextSecondary,
+                        onClick = {}
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.weight(1f))
             Spacer(modifier = Modifier.height(24.dp))
@@ -563,7 +600,7 @@ private fun ProfileMenuItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .background(CardDark)
+            .background(Color.Transparent)
             .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -619,6 +656,61 @@ fun UserInfoScreenPreview() {
         onNavigateToReviews = {},
         onNavigateToSettings = {}
     )
+}
+
+@Composable
+private fun StatsCard(
+    title: String,
+    count: Int,
+    icon: ImageVector,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xDC0F1623))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(16.dp)
+    ) {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(color.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = color,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Text(
+                    text = count.toString(),
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = title,
+                color = TextSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
 }
 
 private fun saveProfileChanges(
