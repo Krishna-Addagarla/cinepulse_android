@@ -77,6 +77,7 @@ fun AuthScreenContent(
 
     var isSignIn by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var dateOfBirth by remember { mutableStateOf<Date?>(null) }
@@ -201,6 +202,11 @@ fun AuthScreenContent(
                 Column {
                     Spacer(modifier = Modifier.height(14.dp))
                     AuthInputField(
+                        value = username, onValueChange = { username = it },
+                        placeholder = "Username", icon = Icons.Default.Person
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    AuthInputField(
                         value = confirmPassword, onValueChange = {
                             confirmPassword = it
                             passwordMismatchError = false
@@ -253,6 +259,7 @@ fun AuthScreenContent(
                             if (!passwordMismatchError && !dobError) {
                                 onRegister(registrationRequest(
                                     email = email,
+                                    username = username,
                                     password = password,
                                     date_of_birth = formatDateForApi(dateOfBirth!!)
                                 ))
@@ -329,13 +336,13 @@ private fun ErrorBanner(message: String) {
 @Composable
 private fun AppLogo() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(modifier = Modifier.size(64.dp).clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(colors = listOf(Color(0xFF1A1A2E), Color(0xFF16213E)))).border(1.5.dp, AccentRed.copy(alpha = 0.6f), RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(64.dp).clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(colors = listOf(Color(0xFF1A1A2E), Color(0xFF16213E)))).border(1.5.dp, AccentBlue.copy(alpha = 0.6f), RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
             Text(text = "🎬", fontSize = 30.sp)
         }
         Spacer(modifier = Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "Cine", color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-            Text(text = "Pulse", color = AccentRed, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            Text(text = "Pulse", color = AccentBlue, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
         }
     }
 }

@@ -4,6 +4,7 @@ import com.partner.cinepulse.data.remote.apis.authApiService
 import com.partner.cinepulse.data.remote.apis.contentApiService
 import com.partner.cinepulse.data.remote.apis.fanClubApiService
 import com.partner.cinepulse.data.remote.apis.helperApiService
+import com.partner.cinepulse.data.remote.apis.postsApiService
 import com.partner.cinepulse.data.repository.TokenRepository
 import dagger.Module
 import dagger.Provides
@@ -95,4 +96,9 @@ object appModule {
     @Singleton
     fun getHelperAPI(retrofit: Retrofit): helperApiService =
         retrofit.create(helperApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun getPostsAPI(retrofit: Retrofit): postsApiService =
+        retrofit.create(postsApiService::class.java)
 }

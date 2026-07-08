@@ -14,6 +14,7 @@ sealed class Screen(val route: String) {
     object Discussions : Screen("discussions")
     object Chatbot : Screen("chatbot")
     object Profile : Screen("profile")
+    object Onboarding : Screen("onboarding")
 
     object Actor : Screen("actor/{id}"){
         fun createRoute(id: Int) = "actor/${Uri.encode(id.toString())}"
@@ -28,5 +29,13 @@ sealed class Screen(val route: String) {
         fun createRoute(id: Int) = "write_review/${Uri.encode(id.toString())}"
     }
     object CreateFanClub : Screen("create_fanclub")
+    object CreatePost : Screen("create_post")
+    object Favorites : Screen("favorites")
+    object Lists : Screen("lists")
+    object ReviewsList : Screen("reviews_list")
+    object CollectionDetails : Screen("collection_details/{id}/{name}") {
+        fun createRoute(id: Int, name: String) = "collection_details/$id/${Uri.encode(name)}"
+    }
+    object AccountSettings : Screen("account_settings")
 
 }

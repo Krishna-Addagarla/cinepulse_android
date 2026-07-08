@@ -26,7 +26,8 @@ data class MovieUiState(
 
 @HiltViewModel
 class MovieInfoViewModel @Inject constructor(
-    val contentRepository: ContentRepository
+    val contentRepository: ContentRepository,
+    private val recentViewDao: com.partner.cinepulse.data.local.dao.RecentViewDao
 ) : ViewModel() {
 
     private val _uistate = MutableStateFlow(MovieUiState())
@@ -43,6 +44,12 @@ class MovieInfoViewModel @Inject constructor(
     private val reviewLimit = 10
     private var isFetchingReviews = false
 
+    private val _isFavorite = MutableStateFlow(false)
+    val isFavorite: StateFlow<Boolean> = _isFavorite
+
+    private val _collections = MutableStateFlow<List<com.partner.cinepulse.data.remote.models.CollectionResponse>>(emptyList())
+    val collections: StateFlow<List<com.partner.cinepulse.data.remote.models.CollectionResponse>> = _collections
+
     fun getMovieDetails(id: Int) {
         currentMovieId = id
         viewModelScope.launch {
@@ -54,6 +61,11 @@ class MovieInfoViewModel @Inject constructor(
                     is Resource.Success -> {
                         _movieInfo.value = result.data
                         _uistate.update { it.copy(isLoading = false, errorMessage = null) }
+                        result.data?.let { data ->
+                            viewModelScope.launch {
+                                recentViewDao.addViewWithLimit(data.id, "movie", com.partner.cinepulse.utils.Constants.RECENT_VIEWS_LIMIT)
+                            }
+                        }
                     }
                     is Resource.Error<*> -> _uistate.update {
                         it.copy(isLoading = false, errorMessage = result.message)
@@ -61,7 +73,88 @@ class MovieInfoViewModel @Inject constructor(
                 }
             }
         }
+        checkFavoriteStatus(id)
+        loadCollections()
         loadReviews(id)
+    }
+
+    fun checkFavoriteStatus(movieId: Int) {
+        viewModelScope.launch {
+            contentRepository.checkFavoriteStatus(movieId = movieId, tvShowId = null).collect { result ->
+                if (result is Resource.Success) {
+                    _isFavorite.value = result.data?.is_favorite ?: false
+                }
+            }
+        }
+    }
+
+    fun toggleFavorite(movieId: Int) {
+        viewModelScope.launch {
+            if (_isFavorite.value) {
+                contentRepository.removeFavorite(movieId = movieId, tvShowId = null).collect { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            _isFavorite.value = false
+                        }
+                        is Resource.Error -> {
+                            android.util.Log.e("MovieInfoViewModel", "Failed to remove favorite: ${result.message}")
+                        }
+                        else -> {}
+                    }
+                }
+            } else {
+                contentRepository.addFavorite(com.partner.cinepulse.data.remote.models.FavoriteAddRequest(movie_id = movieId)).collect { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            _isFavorite.value = true
+                        }
+                        is Resource.Error -> {
+                            android.util.Log.e("MovieInfoViewModel", "Failed to add favorite: ${result.message}")
+                        }
+                        else -> {}
+                    }
+                }
+            }
+        }
+    }
+
+    fun loadCollections() {
+        viewModelScope.launch {
+            contentRepository.listCollections().collect { result ->
+                if (result is Resource.Success) {
+                    _collections.value = result.data ?: emptyList()
+                }
+            }
+        }
+    }
+
+    fun toggleCollectionItem(collectionId: Int, movieId: Int, isAdding: Boolean) {
+        viewModelScope.launch {
+            if (isAdding) {
+                contentRepository.addCollectionItem(collectionId, com.partner.cinepulse.data.remote.models.CollectionItemAddRequest(movie_id = movieId)).collect { result ->
+                    if (result is Resource.Success) {
+                        loadCollections()
+                    }
+                }
+            } else {
+                contentRepository.removeCollectionItem(collectionId, movieId = movieId, tvShowId = null).collect { result ->
+                    if (result is Resource.Success) {
+                        loadCollections()
+                    }
+                }
+            }
+        }
+    }
+
+    fun createCollection(name: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            contentRepository.createCollection(com.partner.cinepulse.data.remote.models.CollectionCreateRequest(name)).collect { result ->
+                if (result is Resource.Success) {
+                    loadCollections()
+                    onSuccess()
+                }
+            }
+        }
     }
 
     fun loadNextReviewPage() {

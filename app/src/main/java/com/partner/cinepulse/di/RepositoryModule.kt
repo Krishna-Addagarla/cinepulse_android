@@ -4,10 +4,12 @@ import com.partner.cinepulse.data.repository.AuthRepository
 import com.partner.cinepulse.data.repository.ContentRepository
 import com.partner.cinepulse.data.repository.FanClubRepository
 import com.partner.cinepulse.data.repository.helperRepository
+import com.partner.cinepulse.data.repository.PostRepository
 import com.partner.cinepulse.data.repositoryImpl.AuthRepositoryImpl
 import com.partner.cinepulse.data.repositoryImpl.ContentRepositoryImpl
 import com.partner.cinepulse.data.repositoryImpl.FanClubRepositoryImpl
 import com.partner.cinepulse.data.repositoryImpl.HelperRepositoryImpl
+import com.partner.cinepulse.data.repositoryImpl.PostRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -41,4 +43,10 @@ abstract class RepositoryModule {
     abstract fun bindHelperRepository(
         helperRepositoryImpl: HelperRepositoryImpl
     ) : helperRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPostRepository(
+        postRepositoryImpl: PostRepositoryImpl
+    ) : PostRepository
 }

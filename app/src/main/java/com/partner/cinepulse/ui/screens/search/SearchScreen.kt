@@ -11,6 +11,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -49,9 +51,6 @@ import com.partner.cinepulse.data.remote.models.searchResponse
 import com.partner.cinepulse.ui.components.TopBar
 import com.partner.cinepulse.ui.theme.*
 
-data class TrendingItem(val rank: Int, val title: String, val searches: String)
-data class SuggestedItem(val title: String, val rating: Float, val color1: Color, val color2: Color)
-
 @Composable
 fun SearchScreen(
     onNavigateBack: () -> Boolean,
@@ -62,37 +61,36 @@ fun SearchScreen(
 ) {
     val uiState by viewModel.uistate.collectAsStateWithLifecycle()
     val searchResponse by viewModel.searchResult.collectAsStateWithLifecycle()
+    val query by viewModel.query.collectAsStateWithLifecycle()
 
-    var query by remember { mutableStateOf("") }
     var isSearchFocused by remember { mutableStateOf(false) }
 
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
+    val isShowingResults = query.isNotBlank()
+
+    // Scroll Position Restoration
+    val scrollIndexState by viewModel.scrollIndex.collectAsStateWithLifecycle()
+    val scrollOffsetState by viewModel.scrollOffset.collectAsStateWithLifecycle()
+
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = scrollIndexState,
+        initialFirstVisibleItemScrollOffset = scrollOffsetState
+    )
+
+    // Save scroll state when it changes
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        viewModel.saveScrollPosition(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
+    }
+
+    // Debounced Search Call
     LaunchedEffect(query) {
-        if (query.isNotBlank()) {
+        if (query.isNotBlank() && query != searchResponse?.query) {
             kotlinx.coroutines.delay(400L)
             viewModel.searchContent(query)
         }
     }
-
-    val isShowingResults = query.isNotBlank()
-
-    val recentSearches = listOf("Oppenheimer", "Denis Villeneuve", "Sci-Fi Thriller", "Christopher Nolan")
-
-    val trendingItems = listOf(
-        TrendingItem(1, "Dune Part Two", "12.5K searches"),
-        TrendingItem(2, "Killers of the Flower Moon", "8.3K searches"),
-        TrendingItem(3, "Poor Things", "6.7K searches"),
-        TrendingItem(4, "The Zone of Interest", "5.2K searches"),
-    )
-
-    val suggestedItems = listOf(
-        SuggestedItem("Oppenheimer", 4.6f, Color(0xFFB05C1A), Color(0xFF6B3A10)),
-        SuggestedItem("Toy Story", 4.4f, Color(0xFF2E7D32), Color(0xFF1B5E20)),
-        SuggestedItem("Inception", 4.8f, Color(0xFF1565C0), Color(0xFF0D47A1)),
-        SuggestedItem("The Godfather", 4.9f, Color(0xFF4A148C), Color(0xFF311B92)),
-    )
 
     Column(
         modifier = Modifier
@@ -134,7 +132,7 @@ fun SearchScreen(
 
                 BasicTextField(
                     value = query,
-                    onValueChange = { query = it },
+                    onValueChange = { viewModel.setQuery(it) },
                     modifier = Modifier
                         .weight(1f)
                         .padding(vertical = 10.dp)
@@ -145,7 +143,12 @@ fun SearchScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
-                        onSearch = { focusManager.clearFocus() }
+                        onSearch = {
+                            if (query.isNotBlank()) {
+                                viewModel.searchContent(query)
+                            }
+                            focusManager.clearFocus()
+                        }
                     ),
                     decorationBox = { innerTextField ->
                         Box {
@@ -169,7 +172,7 @@ fun SearchScreen(
                         modifier = Modifier
                             .size(18.dp)
                             .clickable {
-                                query = ""
+                                viewModel.setQuery("")
                                 focusRequester.requestFocus()
                             }
                     )
@@ -188,9 +191,11 @@ fun SearchScreen(
                     isLoading = uiState.isLoading,
                     errorMessage = uiState.errorMessage,
                     searchResponse = searchResponse,
-                    onNavigateToMovie,
-                    onNavigateToActor,
-                    onNavigateToFanclub
+                    listState = listState,
+                    onNavigateToMovie = onNavigateToMovie,
+                    onNavigateToActor = onNavigateToActor,
+                    onNavigateToFanclub = onNavigateToFanclub,
+                    onRetry = { viewModel.searchContent(query) }
                 )
             }
 
@@ -200,12 +205,29 @@ fun SearchScreen(
                 exit = fadeOut()
             ) {
                 DiscoveryPanel(
-                    recentSearches = recentSearches,
-                    trendingItems = trendingItems,
-                    suggestedItems = suggestedItems,
+                    recentSearches = uiState.recentSearches,
+                    trendingSearches = uiState.trendingSearches,
+                    suggestions = uiState.suggestions,
+                    isTrendingLoading = uiState.isTrendingLoading,
+                    isSuggestionsLoading = uiState.isSuggestionsLoading,
+                    trendingErrorMessage = uiState.trendingErrorMessage,
+                    suggestionsErrorMessage = uiState.suggestionsErrorMessage,
                     onChipClick = { tag ->
-                        query = tag
+                        viewModel.setQuery(tag)
+                        viewModel.searchContent(tag)
                         focusManager.clearFocus()
+                    },
+                    onDeleteChip = { tag ->
+                        viewModel.removeRecentSearch(tag)
+                    },
+                    onClearAllRecent = {
+                        viewModel.clearAllRecentSearches()
+                    },
+                    onRetryTrending = {
+                        viewModel.refreshTrendingAndSuggestions()
+                    },
+                    onRetrySuggestions = {
+                        viewModel.refreshTrendingAndSuggestions()
                     }
                 )
             }
@@ -219,9 +241,11 @@ private fun SearchResultsPanel(
     isLoading: Boolean,
     errorMessage: String?,
     searchResponse: searchResponse?,
+    listState: LazyListState,
     onNavigateToMovie: (id: Int) -> Unit,
     onNavigateToActor: (id: Int) -> Unit,
-    onNavigateToFanclub: (id: Int) -> Unit
+    onNavigateToFanclub: (id: Int) -> Unit,
+    onRetry: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         if (searchResponse != null && !isLoading) {
@@ -284,6 +308,13 @@ private fun SearchResultsPanel(
                             color = TextSecondary,
                             fontSize = 13.sp
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = onRetry,
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)
+                        ) {
+                            Text("Retry", color = BgDark)
+                        }
                     }
                 }
             }
@@ -318,6 +349,7 @@ private fun SearchResultsPanel(
 
             searchResponse != null -> {
                 LazyColumn(
+                    state = listState,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize()
@@ -325,9 +357,10 @@ private fun SearchResultsPanel(
                     items(searchResponse.results, key = { "${it.id}_${it.type}" }) { item ->
                         SearchResultCard(
                             item = item,
-                            onClick = {selectedItem->
-                                when(selectedItem.type.lowercase()){
-                                    "movie","tvshow" -> onNavigateToMovie(selectedItem.id)
+                            onClick = { selectedItem ->
+                                when (selectedItem.type.lowercase()) {
+                                    "movie" -> onNavigateToMovie(selectedItem.id)
+                                    "tv_show" -> onNavigateToMovie(selectedItem.id) // Map TV Show details
                                     "artist" -> onNavigateToActor(selectedItem.id)
                                     "fanclub" -> onNavigateToFanclub(selectedItem.id)
                                 }
@@ -341,15 +374,15 @@ private fun SearchResultsPanel(
 }
 
 @Composable
-private fun SearchResultCard(item: searchItem,onClick: (searchItem) -> Unit) {
+private fun SearchResultCard(item: searchItem, onClick: (searchItem) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(CardDark)
             .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-            .clickable { }
-            .padding(12.dp).clickable{ onClick(item) },
+            .clickable { onClick(item) }
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -360,7 +393,7 @@ private fun SearchResultCard(item: searchItem,onClick: (searchItem) -> Unit) {
                 .background(CardBorder),
             contentAlignment = Alignment.Center
         ) {
-            if (item.photo_url.isNotBlank()) {
+            if (!item.photo_url.isNullOrBlank()) {
                 AsyncImage(
                     model = item.photo_url,
                     contentDescription = item.name,
@@ -381,14 +414,13 @@ private fun SearchResultCard(item: searchItem,onClick: (searchItem) -> Unit) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             if (!item.subtitle.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = item.subtitle,
                     color = TextSecondary,
                     fontSize = 12.sp
                 )
             } else {
-                Spacer(modifier = Modifier.height(10.dp))  // Maintain consistent spacing
+                Spacer(modifier = Modifier.height(10.dp))
             }
             Spacer(modifier = Modifier.height(6.dp))
 
@@ -433,9 +465,17 @@ private fun SearchResultCard(item: searchItem,onClick: (searchItem) -> Unit) {
 @Composable
 private fun DiscoveryPanel(
     recentSearches: List<String>,
-    trendingItems: List<TrendingItem>,
-    suggestedItems: List<SuggestedItem>,
-    onChipClick: (String) -> Unit
+    trendingSearches: List<searchItem>,
+    suggestions: List<searchItem>,
+    isTrendingLoading: Boolean,
+    isSuggestionsLoading: Boolean,
+    trendingErrorMessage: String?,
+    suggestionsErrorMessage: String?,
+    onChipClick: (String) -> Unit,
+    onDeleteChip: (String) -> Unit,
+    onClearAllRecent: () -> Unit,
+    onRetryTrending: () -> Unit,
+    onRetrySuggestions: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -443,27 +483,60 @@ private fun DiscoveryPanel(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 80.dp)
     ) {
-        SectionHeader(icon = "🕐", title = "Recent Searches")
-        Spacer(modifier = Modifier.height(12.dp))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(recentSearches) { tag ->
-                RecentChip(text = tag, onClick = { onChipClick(tag) })
+        if (recentSearches.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(end = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SectionHeader(icon = "🕐", title = "Recent Searches")
+                Text(
+                    text = "Clear All",
+                    color = AccentGreen,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable { onClearAllRecent() }
+                )
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(recentSearches) { tag ->
+                    RecentChip(text = tag, onClick = { onChipClick(tag) }, onDeleteClick = { onDeleteChip(tag) })
+                }
+            }
+            Spacer(modifier = Modifier.height(28.dp))
         }
-
-        Spacer(modifier = Modifier.height(28.dp))
 
         SectionHeader(icon = "📈", title = "Trending Searches")
         Spacer(modifier = Modifier.height(12.dp))
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            trendingItems.forEach { item ->
-                TrendingCard(item = item, onClick = { onChipClick(item.title) })
+        when {
+            isTrendingLoading -> {
+                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AccentGreen, strokeWidth = 2.dp)
+                }
+            }
+            trendingErrorMessage != null && trendingSearches.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Trending unavailable", color = TextSecondary, fontSize = 13.sp)
+                        Button(onClick = onRetryTrending, colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)) {
+                            Text("Retry", color = BgDark, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+            else -> {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    trendingSearches.take(5).forEachIndexed { index, item ->
+                        TrendingCard(rank = index + 1, item = item, onClick = { onChipClick(item.name) })
+                    }
+                }
             }
         }
 
@@ -471,12 +544,31 @@ private fun DiscoveryPanel(
 
         SectionHeader(icon = "✨", title = "Suggested for You")
         Spacer(modifier = Modifier.height(12.dp))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(suggestedItems) { item ->
-                SuggestedCard(item = item, onClick = { onChipClick(item.title) })
+        when {
+            isSuggestionsLoading -> {
+                Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AccentGreen, strokeWidth = 2.dp)
+                }
+            }
+            suggestionsErrorMessage != null && suggestions.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Suggestions unavailable", color = TextSecondary, fontSize = 13.sp)
+                        Button(onClick = onRetrySuggestions, colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)) {
+                            Text("Retry", color = BgDark, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+            else -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(suggestions) { item ->
+                        SuggestedCard(item = item, onClick = { onChipClick(item.name) })
+                    }
+                }
             }
         }
 
@@ -497,21 +589,31 @@ private fun SectionHeader(icon: String, title: String) {
 }
 
 @Composable
-private fun RecentChip(text: String, onClick: () -> Unit) {
-    Box(
+private fun RecentChip(text: String, onClick: () -> Unit, onDeleteClick: () -> Unit) {
+    Row(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(DarkSlate)
             .border(1.dp, ChipBorder, RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(text = text, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Icon(
+            imageVector = Icons.Default.Clear,
+            contentDescription = "Delete",
+            tint = TextSecondary,
+            modifier = Modifier
+                .size(14.dp)
+                .clickable { onDeleteClick() }
+        )
     }
 }
 
 @Composable
-private fun TrendingCard(item: TrendingItem, onClick: () -> Unit = {}) {
+private fun TrendingCard(rank: Int, item: searchItem, onClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -523,7 +625,7 @@ private fun TrendingCard(item: TrendingItem, onClick: () -> Unit = {}) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "${item.rank}",
+            text = "$rank",
             color = TextSecondary,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
@@ -531,9 +633,9 @@ private fun TrendingCard(item: TrendingItem, onClick: () -> Unit = {}) {
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = item.title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = item.name, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = item.searches, color = TextSecondary, fontSize = 12.sp)
+            Text(text = item.subtitle ?: "Trending content", color = TextSecondary, fontSize = 12.sp)
         }
         Box(
             modifier = Modifier
@@ -548,24 +650,43 @@ private fun TrendingCard(item: TrendingItem, onClick: () -> Unit = {}) {
 }
 
 @Composable
-private fun SuggestedCard(item: SuggestedItem, onClick: () -> Unit = {}) {
+private fun SuggestedCard(item: searchItem, onClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .width(140.dp)
             .height(200.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(Brush.verticalGradient(listOf(item.color1, item.color2)))
+            .background(CardDark)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
     ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color.Black.copy(alpha = 0.65f))
-                .padding(horizontal = 6.dp, vertical = 3.dp)
-        ) {
-            Text(text = "⭐ ${item.rating}", color = TextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        if (!item.photo_url.isNullOrBlank()) {
+            AsyncImage(
+                model = item.photo_url,
+                contentDescription = item.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize().background(DarkSlate),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "🎬", fontSize = 36.sp)
+            }
+        }
+        
+        if (item.rating > 0.0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color.Black.copy(alpha = 0.65f))
+                    .padding(horizontal = 6.dp, vertical = 3.dp)
+            ) {
+                Text(text = "⭐ ${"%.1f".format(item.rating)}", color = TextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
         }
         Box(
             modifier = Modifier
@@ -574,16 +695,7 @@ private fun SuggestedCard(item: SuggestedItem, onClick: () -> Unit = {}) {
                 .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
                 .padding(10.dp)
         ) {
-            Text(text = item.title, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = item.name, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         }
     }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF080C14)
-@Composable
-fun SearchScreenPreview() {
-    SearchScreen(onNavigateBack = { false },
-        onNavigateToActor = {},
-        onNavigateToMovie = {},
-        onNavigateToFanclub = {})
 }

@@ -1,5 +1,12 @@
 package com.partner.cinepulse.navigation
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -10,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.partner.cinepulse.ui.theme.PrimaryColor
 import com.partner.cinepulse.ui.theme.tertiaryColor
+import com.partner.cinepulse.ui.theme.AccentBlue
 
 @Composable
 fun BottomNavigation(
@@ -23,14 +31,14 @@ fun BottomNavigation(
         tonalElevation = 0.dp
     ) {
         val items = listOf(
-            Screen.Home to "Home",
-            Screen.Search to "Search",
-            Screen.Reviews to "Reviews",
-            Screen.Discussions to "Discussions",
-            Screen.Chatbot to "Chatbot"
+            Triple(Screen.Home, "Home", Icons.Default.Home),
+            Triple(Screen.Search, "Search", Icons.Default.Search),
+            Triple(Screen.Reviews, "Reviews", Icons.Default.Star),
+            Triple(Screen.Discussions, "Discussions", Icons.Default.List),
+            Triple(Screen.Chatbot, "Chatbot", Icons.Default.Build)
         )
 
-        items.forEach { (screen, title) ->
+        items.forEach { (screen, title, iconImage) ->
             NavigationBarItem(
                 selected = currentRoute == screen.route,
                 onClick = {
@@ -43,17 +51,26 @@ fun BottomNavigation(
                     }
                 },
                 icon = {
-                    Text(
-                        text = title,
-                        fontSize = 12.sp,
-                        fontWeight = if (currentRoute == screen.route)
-                            FontWeight.Bold else FontWeight.Normal
+                    Icon(
+                        imageVector = iconImage,
+                        contentDescription = title,
+                        modifier = Modifier.size(20.dp)
                     )
                 },
+                label = {
+                    Text(
+                        text = title,
+                        fontSize = 10.sp,
+                        fontWeight = if (currentRoute == screen.route)
+                            FontWeight.Bold else FontWeight.Normal,
+                        maxLines = 1
+                    )
+                },
+                alwaysShowLabel = false,
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFFE50914),
+                    selectedIconColor = AccentBlue,
                     unselectedIconColor = Color.Gray,
-                    selectedTextColor = Color(0xFFE50914),
+                    selectedTextColor = AccentBlue,
                     unselectedTextColor = Color.Gray,
                     indicatorColor = Color.Transparent
                 )

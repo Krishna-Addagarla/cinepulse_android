@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.partner.cinepulse.ui.theme.AccentBlue
 
 @Composable
 fun TopBar(
@@ -64,7 +65,7 @@ fun TopBar(
 
                 Text(
                     text = title,
-                    color = if (title == "CinePulse") Color(0xFFE50914) else Color.White,
+                    color = if (title == "CinePulse") AccentBlue else Color.White,
                     fontSize = if (title == "CinePulse") 24.sp else 20.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -94,7 +95,7 @@ fun TopBar(
                     BadgedBox(
                         badge = {
                             Badge(
-                                containerColor = Color(0xFFE50914),
+                                containerColor = AccentBlue,
                                 modifier = Modifier.offset(x = (-4).dp, y = 4.dp)
                             ) {
                                 Text(

@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.partner.cinepulse.ui.screens.movieinfo
 
 import androidx.compose.foundation.background
@@ -27,11 +28,27 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -169,6 +186,8 @@ fun MovieInfoScreen(
 ) {
     val movieInfo by viewModel.movieInfo.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    val collections by viewModel.collections.collectAsStateWithLifecycle()
 
     LaunchedEffect(id) {
         viewModel.getMovieDetails(id)
@@ -178,6 +197,11 @@ fun MovieInfoScreen(
         onNavigateBack = onNavigateBack,
         movieInfo = movieInfo,
         uiState = uiState,
+        isFavorite = isFavorite,
+        collections = collections,
+        onFavoriteToggle = { viewModel.toggleFavorite(id) },
+        onCollectionItemToggle = { colId, isAdding -> viewModel.toggleCollectionItem(colId, id, isAdding) },
+        onCreateCollection = { name, onSuccess -> viewModel.createCollection(name, onSuccess) },
         onArtistClick = onArtistClick,
         onWriteReviewClick = onWriteReviewClick,
         onLoadNextPage = { viewModel.loadNextReviewPage() }
@@ -190,14 +214,21 @@ fun MovieInfoContent(
     onNavigateBack: () -> Unit = {},
     movieInfo: movieResponse?,
     uiState: MovieUiState,
+    isFavorite: Boolean,
+    collections: List<com.partner.cinepulse.data.remote.models.CollectionResponse>,
+    onFavoriteToggle: () -> Unit,
+    onCollectionItemToggle: (Int, Boolean) -> Unit,
+    onCreateCollection: (String, () -> Unit) -> Unit,
     onArtistClick: (artistId: Int) -> Unit,
     onWriteReviewClick: (movieId: Int) -> Unit,
     onLoadNextPage: () -> Unit
 ) {
     var reviewFilter by remember { mutableStateOf("Latest") }
     val likedStates = remember { androidx.compose.runtime.snapshots.SnapshotStateMap<Int, Boolean>() }
-//    val likedStates = remember { sampleReviews.map { mutableStateOf(false) } }.toMutableList()
-//    val likeCounts  = remember { sampleReviews.map { mutableStateOf(it.likes) } }
+
+    var showListsSheet by remember { mutableStateOf(false) }
+    var showCreateListDialog by remember { mutableStateOf(false) }
+    var newListName by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -210,10 +241,61 @@ fun MovieInfoContent(
             // 1. Poster hero with overlapping title + chips
             item { PosterHero(onNavigateBack = onNavigateBack, movieInfo = movieInfo) }
 
-            // 2. Rating bar
+            // 2. Rating bar and quick actions
             item {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                     StarRatingRow(rating = movieInfo?.overall_rating?:0.0)
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Favorite Button
+                        androidx.compose.material3.Button(
+                            onClick = onFavoriteToggle,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isFavorite) AccentRed.copy(alpha = 0.15f) else CardDark,
+                                contentColor = if (isFavorite) AccentRed else TextPrimary
+                            ),
+                            border = BorderStroke(1.dp, if (isFavorite) AccentRed else CardBorder),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isFavorite) "Favorited" else "Favorite",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        // Add to List Button
+                        androidx.compose.material3.Button(
+                            onClick = { showListsSheet = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CardDark,
+                                contentColor = TextPrimary
+                            ),
+                            border = BorderStroke(1.dp, CardBorder),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlaylistAdd,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Add to List", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
                 }
                 HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
             }
@@ -336,6 +418,140 @@ fun MovieInfoContent(
                 color      = Color.White,
                 fontSize   = 13.sp,
                 fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (showListsSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showListsSheet = false },
+                containerColor = CardDark,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Add to List",
+                            color = TextPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(
+                            onClick = {
+                                newListName = ""
+                                showCreateListDialog = true
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Create New List",
+                                tint = AccentBlue
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    if (collections.isEmpty()) {
+                        Text(
+                            text = "No lists found. Click + to create one.",
+                            color = TextSecondary,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(vertical = 24.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp)
+                        ) {
+                            items(collections) { collection ->
+                                val isChecked = collection.items.any { item ->
+                                    item.movie_id == movieInfo?.id || item.tv_show_id == movieInfo?.id
+                                }
+                                
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            onCollectionItemToggle(collection.id, !isChecked)
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = isChecked,
+                                        onCheckedChange = {
+                                            onCollectionItemToggle(collection.id, !isChecked)
+                                        },
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = AccentBlue,
+                                            uncheckedColor = TextSecondary
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = collection.name,
+                                        color = TextPrimary,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showCreateListDialog) {
+            AlertDialog(
+                onDismissRequest = { showCreateListDialog = false },
+                title = { Text("Create New List", color = TextPrimary) },
+                text = {
+                    OutlinedTextField(
+                        value = newListName,
+                        onValueChange = { newListName = it },
+                        label = { Text("List Name") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = AccentBlue,
+                            unfocusedBorderColor = CardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (newListName.trim().isNotEmpty()) {
+                                onCreateCollection(newListName.trim()) {
+                                    showCreateListDialog = false
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                    ) {
+                        Text("Create")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCreateListDialog = false }) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                },
+                containerColor = CardDark
             )
         }
 
@@ -638,6 +854,11 @@ fun MovieInfoContentPreview() {
         onArtistClick = {},
         onWriteReviewClick = {},
         uiState = MovieUiState(),
+        isFavorite = false,
+        collections = emptyList(),
+        onFavoriteToggle = {},
+        onCollectionItemToggle = { _, _ -> },
+        onCreateCollection = { _, _ -> },
         onLoadNextPage = {}
     )
 }
@@ -650,7 +871,12 @@ fun MovieInfoContentNullPreview() {
         movieInfo = null,
         onArtistClick = {},
         onWriteReviewClick = {},
-        uiState = MovieUiState() ,
+        uiState = MovieUiState(),
+        isFavorite = false,
+        collections = emptyList(),
+        onFavoriteToggle = {},
+        onCollectionItemToggle = { _, _ -> },
+        onCreateCollection = { _, _ -> },
         onLoadNextPage = {}
     )
 }

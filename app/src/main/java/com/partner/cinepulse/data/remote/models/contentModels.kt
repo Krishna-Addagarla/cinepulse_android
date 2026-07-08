@@ -9,11 +9,11 @@ data class searchResponse(
 data class searchItem(
     val id : Int,
     val name : String,
-    val photo_url : String,
+    val photo_url : String?,
     val type : String,
     val subtitle : String?,
     val rating : Double=0.0,
-    val match_score : Double
+    val match_score : Double = 0.0
 )
 
 data class actorResponse(
@@ -156,6 +156,156 @@ data class ArtistsPerformanceRatings(
     val artistName: String,
     val role: Role,
     val rating: Int
+)
+
+data class ArtistResponse(
+    val id: Int,
+    val name: String,
+    val photo_url: String?,
+    val overall_rating: Float,
+    val total_ratings: Int,
+    val roles: List<Role>,
+    val created_at: String
+)
+
+data class ExploreActivityResponse(
+    val activity_type: String, // "review" | "discussion" | "post"
+    val id: Int,
+    val user_id: Int,
+    val user_name: String,
+    val user_photo: String?,
+    val time_ago: String,
+    val created_at: String,
+    
+    // For reviews
+    val rating: Float?,
+    val movie_title: String?,
+    val movie_id: Int?,
+    val tvshow_title: String?,
+    val tvshow_id: Int?,
+    val review_text: String?,
+    
+    // For posts & discussions
+    val content: String?,
+    val media_urls: List<String>?,
+    val fanclub_id: Int?,
+    val fanclub_name: String?,
+    val likes_count: Int?,
+    val comments_count: Int?,
+    @com.google.gson.annotations.SerializedName("is_liked_by_current_user")
+    val is_liked_by_current_user: Boolean?,
+    
+    // Tags
+    val tagged_artists: List<ArtistTag>?,
+    val tagged_movies: List<MovieTag>?,
+    val tagged_tvshows: List<TVShowTag>?
+)
+
+data class ArtistTag(
+    val id: Int,
+    val name: String,
+    val photo_url: String?
+)
+
+data class MovieTag(
+    val id: Int,
+    val title: String,
+    val poster_url: String?,
+    val release_year: Int?
+)
+
+data class TVShowTag(
+    val id: Int,
+    val title: String,
+    val poster_url: String?,
+    val release_year: Int?
+)
+
+data class PostResponse(
+    val id: Int,
+    val content: String,
+    val media_urls: List<String>,
+    @com.google.gson.annotations.SerializedName("is_public")
+    val is_public: Boolean,
+    val user_id: Int,
+    val user_name: String,
+    val user_photo: String?,
+    val fanclub_id: Int?,
+    val fanclub_name: String?,
+    val created_at: String,
+    val updated_at: String?,
+    val likes_count: Int,
+    val comments_count: Int,
+    @com.google.gson.annotations.SerializedName("is_liked_by_current_user")
+    val is_liked_by_current_user: Boolean,
+    val tagged_artists: List<ArtistTag>,
+    val tagged_movies: List<MovieTag>,
+    val tagged_tvshows: List<TVShowTag>
+)
+
+data class PostCreateRequest(
+    val content: String,
+    val media_urls: List<String> = emptyList(),
+    @com.google.gson.annotations.SerializedName("is_public")
+    val is_public: Boolean = true,
+    val fanclub_id: Int? = null,
+    val tagged_artist_ids: List<Int> = emptyList(),
+    val tagged_movie_ids: List<Int> = emptyList(),
+    val tagged_tvshow_ids: List<Int> = emptyList()
+)
+
+data class FavoriteAddRequest(
+    val movie_id: Int? = null,
+    val tv_show_id: Int? = null
+)
+
+data class FavoriteResponse(
+    val id: Int,
+    val user_id: Int,
+    val movie_id: Int?,
+    val tv_show_id: Int?,
+    val created_at: String,
+    val content_type: String, // "movie" | "tv_show"
+    val movie: movieResponse?,
+    val tv_show: tvshowResponse?
+)
+
+data class FavoriteStatusResponse(
+    val is_favorite: Boolean
+)
+
+data class CollectionCreateRequest(
+    val name: String
+)
+
+data class CollectionRenameRequest(
+    val name: String
+)
+
+data class CollectionItemAddRequest(
+    val movie_id: Int? = null,
+    val tv_show_id: Int? = null
+)
+
+data class CollectionItemResponse(
+    val id: Int,
+    val collection_id: Int,
+    val movie_id: Int?,
+    val tv_show_id: Int?,
+    val created_at: String,
+    val content_type: String, // "movie" | "tv_show"
+    val movie: movieResponse?,
+    val tv_show: tvshowResponse?
+)
+
+data class CollectionResponse(
+    val id: Int,
+    val user_id: Int,
+    val name: String,
+    val is_watchlist: Boolean,
+    val created_at: String,
+    val item_count: Int,
+    val items: List<CollectionItemResponse> = emptyList()
 )
 
 
