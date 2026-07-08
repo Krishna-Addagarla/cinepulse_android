@@ -38,8 +38,8 @@ import com.partner.cinepulse.utils.rememberImagePicker
 
 private val AccentColor = Color(0xFFE5A100)
 private val SubtleText  = Color(0xFF9E9E9E)
-private val InputBg     = Color(0xFF1C1C1E)
-private val ChipBg      = Color(0xFF2A2A2D)
+private val InputBg     = Color(0xDC0F1623)
+private val ChipBg      = Color(0x9C1E293B)
 
 // ── entry point ───────────────────────────────────────────────────────────
 @Composable
@@ -154,18 +154,18 @@ fun CreateFanClubScreenContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Black)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .background(BgDark)
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(CardDark)
-                    .border(1.dp, CardBorder, CircleShape)
+                    .background(Color(0x8C0F1623))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
                     .clickable { onNavigateBack() },
                 contentAlignment = Alignment.Center
             ) {
@@ -176,6 +176,7 @@ fun CreateFanClubScreenContent(
                     modifier           = Modifier.size(20.dp)
                 )
             }
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text       = "Create a FanClub",
                 color      = TextPrimary,
