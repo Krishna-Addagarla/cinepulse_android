@@ -9,12 +9,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import com.partner.cinepulse.utils.rememberImagePicker
+import com.partner.cinepulse.utils.ImagePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -117,23 +123,176 @@ fun CreatePostScreen(
                 lineHeight = 20.sp
             )
 
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = { Text("What's on your mind? Type @ to tag movies, artists, or shows...", color = TextSecondary) },
+            val maxChars = 280
+            val charCount = text.length
+            val progress = (charCount.toFloat() / maxChars.toFloat()).coerceAtMost(1f)
+            val progressColor = when {
+                charCount > maxChars -> AccentRed
+                charCount > maxChars - 20 -> AccentGold
+                else -> AccentBlue
+            }
+
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { if (it.length <= maxChars) text = it },
+                    placeholder = { Text("What's on your mind? Type @ to tag movies, artists, or shows...", color = TextSecondary) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedBorderColor = AccentBlue,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
+                        focusedContainerColor = Color(0xDC0F1623),
+                        unfocusedContainerColor = Color(0xDC0F1623)
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    maxLines = 10
+                )
+                
+                // Character limit circle inside text box
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "${maxChars - charCount}",
+                        color = if (charCount >= maxChars - 20) progressColor else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    CircularProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.size(18.dp),
+                        color = progressColor,
+                        trackColor = Color.White.copy(alpha = 0.05f),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
+
+            // Post Attachments Action Bar
+            var showAttachmentMock by remember { mutableStateOf(false) }
+            var selectedMood by remember { mutableStateOf<String?>(null) }
+            val moods = listOf("🎬 Cinephile", "🔥 Hyped", "🍿 Popcorn Time", "😭 Emotional", "🧠 Mind-Blown")
+            
+            val postImagePicker = rememberImagePicker(
+                onUpload = { multipart ->
+                    Result.success("")
+                }
+            )
+
+            // Attachment preview image
+            if (postImagePicker.state.uri != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                ) {
+                    AsyncImage(
+                        model = postImagePicker.state.uri,
+                        contentDescription = "Attached media",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .clickable { postImagePicker.clear() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Remove attached image",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            // Actions bar
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    focusedBorderColor = AccentBlue,
-                    unfocusedBorderColor = CardBorder,
-                    focusedContainerColor = CardDark,
-                    unfocusedContainerColor = CardDark
-                ),
-                maxLines = 10
-            )
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xDC0F1623))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(onClick = { postImagePicker.launch() }) {
+                        Text("🖼️", fontSize = 18.sp)
+                    }
+                    IconButton(onClick = { showAttachmentMock = !showAttachmentMock }) {
+                        Text("🎭", fontSize = 18.sp)
+                    }
+                }
+                if (selectedMood != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(AccentGold.copy(alpha = 0.15f))
+                            .border(1.dp, AccentGold.copy(alpha = 0.25f), RoundedCornerShape(20.dp))
+                            .clickable { selectedMood = null }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(text = selectedMood!!, color = AccentGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Icon(imageVector = Icons.Default.Close, contentDescription = null, tint = AccentGold, modifier = Modifier.size(12.dp))
+                        }
+                    }
+                } else {
+                    Text("Attach cinematic vibe", color = TextSecondary, fontSize = 12.sp)
+                }
+            }
+
+            if (showAttachmentMock) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    moods.forEach { mood ->
+                        val isSelected = selectedMood == mood
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (isSelected) AccentBlue else Color(0xDC0F1623))
+                                .border(1.dp, if (isSelected) Color.Transparent else Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+                               .clickable {
+                                    selectedMood = mood
+                                    showAttachmentMock = false
+                                }
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text(text = mood, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
 
             // Autocomplete Tag Suggestions Box
             if (isTagging && displaySuggestions.isNotEmpty()) {
