@@ -124,6 +124,9 @@ fun AppNavigation(
                     onMovieClick = {id->
                         navController.navigate(Screen.Movie.createRoute(id))
                     },
+                    onArtistClick = {artistId->
+                        navController.navigate(Screen.Actor.createRoute(artistId))
+                    },
                     onNavigateToOnboarding = {
                         navController.navigate(Screen.Onboarding.route) {
                             popUpTo(0) { inclusive = true }

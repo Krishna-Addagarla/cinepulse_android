@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -217,6 +218,7 @@ fun HomeScreen(
     onNavigateToChatbot: () -> Unit,
     onProfileClick: () -> Unit,
     onMovieClick : (id : Int) -> Unit,
+    onArtistClick: (id: Int) -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onNavigateToCreatePost: () -> Unit,
     viewModel: HomeScreenViewModel = hiltViewModel()
@@ -237,15 +239,26 @@ fun HomeScreen(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = onNavigateToCreatePost,
-                containerColor = AccentBlue,
+                containerColor = Color(0xEC1E293B),
                 contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier.padding(bottom = 80.dp)
-            ) {
-                Text("+", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            }
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .padding(bottom = 72.dp)
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp)),
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Create Post",
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.White
+                    )
+                },
+                text = {
+                    Text("Create Post", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            )
         },
         containerColor = BgDark
     ) { paddingValues ->
@@ -255,7 +268,7 @@ fun HomeScreen(
                 exploreFeed     = exploreFeed,
                 onProfileClick  = onProfileClick,
                 onMovieClick    = onMovieClick,
-                onArtistClick   = { /* navigate to actor info screen */ },
+                onArtistClick   = onArtistClick,
                 newMovies       = if (moviesInTheaters.isEmpty()) sampleTrendingMovies else moviesInTheaters
             )
         }
@@ -388,11 +401,19 @@ private fun HeroBanner(newRelease : List<movieResponse>,onMovieClick: (Int) -> U
             contentScale = ContentScale.FillBounds
         )
 
-        // Dark overlay
+        // Dark gradient scrim overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.35f))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.85f)
+                        ),
+                        startY = 180f
+                    )
+                )
         )
 
         // Top badges
@@ -527,42 +548,56 @@ private fun TrendingArtistItem(artist: ArtistResponse, onArtistClick: (Int) -> U
             .clickable { onArtistClick(artist.id) }
     ) {
         Box {
-            if (!artist.photo_url.isNullOrEmpty()) {
+            val photoUrl = artist.photo_url?.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+            if (photoUrl != null) {
                 AsyncImage(
-                    model = artist.photo_url,
+                    model = photoUrl,
                     contentDescription = artist.name,
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .border(2.dp, Color(0xFF1C2333), CircleShape),
+                        .border(1.5.dp, Color.White.copy(alpha = 0.15f), CircleShape),
                     contentScale = ContentScale.Crop
                 )
             } else {
+                val initials = artist.name.split(" ")
+                    .take(2)
+                    .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+                    .joinToString("")
                 Box(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(AccentBlue.copy(alpha = 0.2f))
-                        .border(2.dp, Color(0xFF1C2333), CircleShape),
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF4158D0),
+                                    Color(0xFFC850C0),
+                                    Color(0xFFFFCC70)
+                                )
+                            )
+                        )
+                        .border(1.5.dp, Color.White.copy(alpha = 0.15f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = artist.name.firstOrNull()?.toString() ?: "?",
-                        color = TextPrimary,
-                        fontSize = 22.sp,
+                        text = initials.ifEmpty { "?" },
+                        color = Color.White,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
             Box(
                 modifier = Modifier
-                    .size(20.dp)
+                    .size(18.dp)
                     .clip(CircleShape)
-                    .background(EmeraldGreen)
+                    .background(Color(0xFF1DB954))
+                    .border(1.dp, Color.Black, CircleShape)
                     .align(Alignment.BottomEnd),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "↑", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(text = "↑", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             }
         }
         Spacer(modifier = Modifier.height(6.dp))
