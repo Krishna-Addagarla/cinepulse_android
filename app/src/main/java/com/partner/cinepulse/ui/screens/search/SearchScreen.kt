@@ -510,69 +510,71 @@ private fun DiscoveryPanel(
             Spacer(modifier = Modifier.height(28.dp))
         }
 
-        SectionHeader(icon = "📈", title = "Trending Searches")
-        Spacer(modifier = Modifier.height(12.dp))
-        when {
-            isTrendingLoading -> {
-                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AccentGreen, strokeWidth = 2.dp)
+        if (trendingSearches.isNotEmpty() || isTrendingLoading) {
+            SectionHeader(icon = "📈", title = "Trending Searches")
+            Spacer(modifier = Modifier.height(12.dp))
+            when {
+                isTrendingLoading -> {
+                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AccentGreen, strokeWidth = 2.dp)
+                    }
                 }
-            }
-            trendingErrorMessage != null && trendingSearches.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Trending unavailable", color = TextSecondary, fontSize = 13.sp)
-                        Button(onClick = onRetryTrending, colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)) {
-                            Text("Retry", color = BgDark, fontSize = 12.sp)
+                trendingErrorMessage != null && trendingSearches.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Trending unavailable", color = TextSecondary, fontSize = 13.sp)
+                            Button(onClick = onRetryTrending, colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)) {
+                                Text("Retry", color = BgDark, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        trendingSearches.take(5).forEachIndexed { index, item ->
+                            TrendingCard(rank = index + 1, item = item, onClick = { onChipClick(item.name) })
                         }
                     }
                 }
             }
-            else -> {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    trendingSearches.take(5).forEachIndexed { index, item ->
-                        TrendingCard(rank = index + 1, item = item, onClick = { onChipClick(item.name) })
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(28.dp))
         }
 
-        Spacer(modifier = Modifier.height(28.dp))
-
-        SectionHeader(icon = "✨", title = "Suggested for You")
-        Spacer(modifier = Modifier.height(12.dp))
-        when {
-            isSuggestionsLoading -> {
-                Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AccentGreen, strokeWidth = 2.dp)
+        if (suggestions.isNotEmpty() || isSuggestionsLoading) {
+            SectionHeader(icon = "✨", title = "Suggested for You")
+            Spacer(modifier = Modifier.height(12.dp))
+            when {
+                isSuggestionsLoading -> {
+                    Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AccentGreen, strokeWidth = 2.dp)
+                    }
                 }
-            }
-            suggestionsErrorMessage != null && suggestions.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Suggestions unavailable", color = TextSecondary, fontSize = 13.sp)
-                        Button(onClick = onRetrySuggestions, colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)) {
-                            Text("Retry", color = BgDark, fontSize = 12.sp)
+                suggestionsErrorMessage != null && suggestions.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Suggestions unavailable", color = TextSecondary, fontSize = 13.sp)
+                            Button(onClick = onRetrySuggestions, colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)) {
+                                Text("Retry", color = BgDark, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(suggestions) { item ->
+                            SuggestedCard(item = item, onClick = { onChipClick(item.name) })
                         }
                     }
                 }
             }
-            else -> {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(suggestions) { item ->
-                        SuggestedCard(item = item, onClick = { onChipClick(item.name) })
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
