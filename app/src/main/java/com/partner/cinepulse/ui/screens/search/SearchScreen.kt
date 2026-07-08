@@ -24,6 +24,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -379,8 +382,8 @@ private fun SearchResultCard(item: searchItem, onClick: (searchItem) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(CardDark)
-            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .background(Color(0xDC0F1623))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
             .clickable { onClick(item) }
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -390,18 +393,29 @@ private fun SearchResultCard(item: searchItem, onClick: (searchItem) -> Unit) {
             modifier = Modifier
                 .size(width = 56.dp, height = 80.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(CardBorder),
+                .background(Color.White.copy(alpha = 0.05f)),
             contentAlignment = Alignment.Center
         ) {
-            if (!item.photo_url.isNullOrBlank()) {
+            val photoUrl = item.photo_url?.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+            if (photoUrl != null) {
                 AsyncImage(
-                    model = item.photo_url,
+                    model = photoUrl,
                     contentDescription = item.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                Text(text = "🎬", fontSize = 20.sp)
+                val placeholderIcon = when(item.type.lowercase()){
+                    "artist" -> Icons.Default.Person
+                    "fanclub" -> Icons.Default.Groups
+                    else -> Icons.Default.Movie
+                }
+                Icon(
+                    imageVector = placeholderIcon,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
 
@@ -428,7 +442,7 @@ private fun SearchResultCard(item: searchItem, onClick: (searchItem) -> Unit) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(CardBorder)
+                        .background(Color.White.copy(alpha = 0.06f))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
@@ -443,8 +457,8 @@ private fun SearchResultCard(item: searchItem, onClick: (searchItem) -> Unit) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(AccentGreen.copy(alpha = 0.15f))
-                            .border(1.dp, AccentGreen.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                            .background(AccentGreen.copy(alpha = 0.12f))
+                            .border(1.dp, AccentGreen.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
@@ -595,8 +609,8 @@ private fun RecentChip(text: String, onClick: () -> Unit, onDeleteClick: () -> U
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(DarkSlate)
-            .border(1.dp, ChipBorder, RoundedCornerShape(20.dp))
+            .background(Color(0x9C1E293B))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -658,23 +672,39 @@ private fun SuggestedCard(item: searchItem, onClick: () -> Unit = {}) {
             .width(140.dp)
             .height(200.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(CardDark)
-            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .background(Color(0xDC0F1623))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
     ) {
-        if (!item.photo_url.isNullOrBlank()) {
+        val photoUrl = item.photo_url?.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+        if (photoUrl != null) {
             AsyncImage(
-                model = item.photo_url,
+                model = photoUrl,
                 contentDescription = item.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
             Box(
-                modifier = Modifier.fillMaxSize().background(DarkSlate),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF4158D0),
+                                Color(0xFFC850C0),
+                                Color(0xFFFFCC70)
+                            )
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🎬", fontSize = 36.sp)
+                Icon(
+                    imageVector = Icons.Default.Movie,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(36.dp)
+                )
             }
         }
         

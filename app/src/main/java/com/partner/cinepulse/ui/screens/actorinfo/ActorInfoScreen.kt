@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -24,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -182,7 +184,6 @@ fun ActorInfoScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     actorInfo?.filmography?.forEach { MovieThumbnail(it,onMovieClick) }
-//                    knownForMovies.forEach { MovieThumbnail(it) }
                 }
             }
             HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
@@ -208,40 +209,26 @@ fun ActorInfoScreen(
 @Composable
 private fun ProfileHero(onNavigateBack: () -> Unit, actorInfo: actorResponse?) {
     Box(modifier = Modifier.fillMaxWidth()) {
-
-
-        AsyncImage(model = actorInfo?.photo_url, contentDescription = null,
-            modifier = Modifier.fillMaxWidth().height(420.dp),
-            contentScale = ContentScale.FillBounds)
-
-        // Photo area (swap with AsyncImage for real photo)
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(380.dp)
-//                .background(
-//                    Brush.verticalGradient(
-//                        colors = listOf(Color(0xFF0A0A0A), Color(0xFF1A1A2E), Color(0xFF0A0A0A))
-//                    )
-//                ),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            // Placeholder portrait circle
-//            Box(
-//                modifier = Modifier
-//                    .size(180.dp)
-//                    .clip(CircleShape)
-//                    .background(
-//                        Brush.radialGradient(
-//                            colors = listOf(Color(0xFF2A2A3E), Color(0xFF0A0A14))
-//                        )
-//                    )
-//                    .border(2.dp, CardBorder, CircleShape),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Text(text = "🎭", fontSize = 72.sp)
-//            }
-//        }
+        val photoUrl = actorInfo?.photo_url?.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+        if (photoUrl != null) {
+            AsyncImage(
+                model = photoUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(420.dp),
+                contentScale = ContentScale.FillBounds
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(420.dp)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A))
+                        )
+                    )
+            )
+        }
 
         // Bottom scrim
         Box(
@@ -252,13 +239,15 @@ private fun ProfileHero(onNavigateBack: () -> Unit, actorInfo: actorResponse?) {
                 .background(Brush.verticalGradient(listOf(Color.Transparent, BgDark)))
         )
 
-        // Back button
+        // Back button with status bar safety and glassmorphic look
         Box(
             modifier = Modifier
-                .padding(top = 48.dp, start = 14.dp)
-                .size(38.dp)
+                .statusBarsPadding()
+                .padding(top = 12.dp, start = 16.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.55f))
+                .background(Color(0x8C0F1623))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
                 .align(Alignment.TopStart)
                 .clickable { onNavigateBack() },
             contentAlignment = Alignment.Center
@@ -266,19 +255,23 @@ private fun ProfileHero(onNavigateBack: () -> Unit, actorInfo: actorResponse?) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary, modifier = Modifier.size(20.dp))
         }
 
-        // Rating badge — top right
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 52.dp, end = 14.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color.Black.copy(alpha = 0.6f))
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(Icons.Default.Star, contentDescription = null, tint = AccentGold, modifier = Modifier.size(15.dp))
-            Text(text = "9.1", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        // Dynamic Rating badge — top right
+        val rating = actorInfo?.overall_rating ?: 0.0f
+        if (rating > 0f) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, end = 16.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = AccentGold, modifier = Modifier.size(15.dp))
+                Text(text = "%.1f".format(rating), color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -289,8 +282,8 @@ private fun InfoChip(text: String) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(DarkSlate)
-            .border(1.dp, ChipBorder, RoundedCornerShape(20.dp))
+            .background(Color(0x9C1E293B))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(20.dp))
             .padding(horizontal = 14.dp, vertical = 6.dp)
     ) {
         Text(text = text, color = TextSecondary, fontSize = 12.sp)
@@ -305,22 +298,45 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 
 // ── Movie thumbnail ────────────────────────────────────────────────────────────
 @Composable
-private fun MovieThumbnail(movie: Filmography,onMovieClick:(movieId : Int)->Unit) {
+private fun MovieThumbnail(movie: Filmography, onMovieClick: (movieId: Int) -> Unit) {
     Column(modifier = Modifier.width(120.dp)) {
         Box(
             modifier = Modifier
                 .width(120.dp)
                 .height(160.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable{
+                .clickable {
                     onMovieClick(movie.id)
                 }
-                .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
         ) {
-
-            AsyncImage(model = movie.poster_url, contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(420.dp),
-                contentScale = ContentScale.FillBounds)
+            val posterUrl = movie.poster_url.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+            if (posterUrl != null) {
+                AsyncImage(
+                    model = posterUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Movie,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
 
             // Rating badge
             Row(

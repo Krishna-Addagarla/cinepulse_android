@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -562,15 +563,28 @@ fun MovieInfoContent(
 @Composable
 private fun PosterHero(onNavigateBack: () -> Unit, movieInfo: movieResponse?) {
     Box(modifier = Modifier.fillMaxWidth()) {
-
-        AsyncImage(
-            model          = movieInfo?.photo_url,
-            contentDescription = null,
-            modifier       = Modifier
-                .fillMaxWidth()
-                .height(420.dp),
-            contentScale   = ContentScale.FillBounds
-        )
+        val photoUrl = movieInfo?.photo_url?.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+        if (photoUrl != null) {
+            AsyncImage(
+                model          = photoUrl,
+                contentDescription = null,
+                modifier       = Modifier
+                    .fillMaxWidth()
+                    .height(420.dp),
+                contentScale   = ContentScale.FillBounds
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(420.dp)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A))
+                        )
+                    )
+            )
+        }
 
         // Bottom scrim — fades poster into BgDark
         Box(
@@ -596,19 +610,24 @@ private fun PosterHero(onNavigateBack: () -> Unit, movieInfo: movieResponse?) {
                 fontWeight = FontWeight.ExtraBold
             )
             Spacer(modifier = Modifier.height(10.dp))
+            val genresString = movieInfo?.genres?.joinToString("/") { it.name }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 InfoChip(formatBirthDate(movieInfo?.release_date ?: ""))
-                InfoChip("Action/Thriller")
+                if (!genresString.isNullOrEmpty()) {
+                    InfoChip(genresString)
+                }
             }
         }
 
-        // Back button
+        // Back button with status bar safety and glassmorphic look
         Box(
             modifier = Modifier
-                .padding(top = 48.dp, start = 14.dp)
-                .size(38.dp)
+                .statusBarsPadding()
+                .padding(top = 12.dp, start = 16.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.55f))
+                .background(Color(0x8C0F1623))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
                 .align(Alignment.TopStart)
                 .clickable { onNavigateBack() },
             contentAlignment = Alignment.Center
@@ -629,8 +648,8 @@ private fun InfoChip(text: String) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(DarkSlate)
-            .border(1.dp, ChipBorder, RoundedCornerShape(20.dp))
+            .background(Color(0x9C1E293B))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(20.dp))
             .padding(horizontal = 14.dp, vertical = 6.dp)
     ) {
         Text(text = text, color = TextSecondary, fontSize = 12.sp)
@@ -678,20 +697,49 @@ private fun CastAvatar(member: Credit, onArtistClick: (artistId: Int) -> Unit) {
         modifier            = Modifier.width(76.dp)
     ) {
         Box {
+            val photoUrl = member.photo_url?.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
             Box(
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
                     .clickable { onArtistClick(member.id) }
-                    .border(2.dp, CardBorder, CircleShape),
+                    .border(1.5.dp, Color.White.copy(alpha = 0.12f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
-                    model              = member.photo_url,
-                    contentDescription = member.name,
-                    modifier           = Modifier.fillMaxSize(),
-                    contentScale       = ContentScale.Crop
-                )
+                if (photoUrl != null) {
+                    AsyncImage(
+                        model              = photoUrl,
+                        contentDescription = member.name,
+                        modifier           = Modifier.fillMaxSize(),
+                        contentScale       = ContentScale.Crop
+                    )
+                } else {
+                    val initials = member.name.split(" ")
+                        .take(2)
+                        .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+                        .joinToString("")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF4158D0),
+                                        Color(0xFFC850C0),
+                                        Color(0xFFFFCC70)
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initials.ifEmpty { "?" },
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
             // Score badge
             Box(
@@ -700,8 +748,8 @@ private fun CastAvatar(member: Credit, onArtistClick: (artistId: Int) -> Unit) {
                     .offset(x = 2.dp, y = 2.dp)
                     .size(22.dp)
                     .clip(CircleShape)
-                    .background(DarkSlate)
-                    .border(1.dp, CardBorder, CircleShape),
+                    .background(Color(0xEC1E293B))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
