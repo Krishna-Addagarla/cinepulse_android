@@ -279,6 +279,8 @@ private fun HomeScreenContent(
     ) {
         TopBar(onProfileClick = onProfileClick)
 
+        Spacer(modifier = Modifier.height(12.dp))
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 80.dp)
