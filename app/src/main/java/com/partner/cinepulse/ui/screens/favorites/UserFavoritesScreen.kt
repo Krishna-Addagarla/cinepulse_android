@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -149,21 +150,34 @@ fun UserFavoritesScreen(
                                                 onTvShowClick(fav.tv_show_id)
                                             }
                                         },
-                                    colors = CardDefaults.cardColors(containerColor = CardDark),
-                                    border = BorderStroke(1.dp, CardBorder)
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xDC0F1623)),
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                                    shape = RoundedCornerShape(14.dp)
                                 ) {
                                     Column {
+                                        val validPosterUrl = posterUrl.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .height(200.dp)
+                                                .background(Color.White.copy(alpha = 0.05f)),
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            AsyncImage(
-                                                model = posterUrl,
-                                                contentDescription = title,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier.fillMaxSize()
-                                            )
+                                            if (validPosterUrl != null) {
+                                                AsyncImage(
+                                                    model = validPosterUrl,
+                                                    contentDescription = title,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.Movie,
+                                                    contentDescription = null,
+                                                    tint = TextSecondary,
+                                                    modifier = Modifier.size(32.dp)
+                                                )
+                                            }
                                             
                                             // Rating badge overlay
                                             Row(

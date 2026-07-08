@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -166,8 +167,9 @@ fun CollectionDetailsScreen(
                                                 onTvShowClick(item.tv_show_id)
                                             }
                                         },
-                                    colors = CardDefaults.cardColors(containerColor = CardDark),
-                                    border = BorderStroke(1.dp, CardBorder)
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xDC0F1623)),
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                                    shape = RoundedCornerShape(14.dp)
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -175,14 +177,30 @@ fun CollectionDetailsScreen(
                                             .padding(12.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        AsyncImage(
-                                            model = posterUrl,
-                                            contentDescription = title,
-                                            contentScale = ContentScale.Crop,
+                                        val validPosterUrl = posterUrl.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+                                        Box(
                                             modifier = Modifier
                                                 .size(60.dp, 90.dp)
-                                                .clip(RoundedCornerShape(6.dp))
-                                        )
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Color.White.copy(alpha = 0.05f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            if (validPosterUrl != null) {
+                                                AsyncImage(
+                                                    model = validPosterUrl,
+                                                    contentDescription = title,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.Movie,
+                                                    contentDescription = null,
+                                                    tint = TextSecondary,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
+                                        }
                                         Spacer(modifier = Modifier.width(16.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(

@@ -2,6 +2,7 @@ package com.partner.cinepulse.ui.screens.lists
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.partner.cinepulse.data.remote.models.CollectionResponse
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import com.partner.cinepulse.data.remote.models.CollectionItemResponse
 import com.partner.cinepulse.ui.components.TopBar
 import com.partner.cinepulse.ui.theme.*
 import com.partner.cinepulse.utils.Resource
@@ -221,20 +227,8 @@ fun UserListsScreen(
                                             .padding(16.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(48.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(AccentBlue.copy(alpha = 0.12f)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.List,
-                                                contentDescription = null,
-                                                tint = AccentBlue
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(16.dp))
+                                        OverlapPosterStack(items = collection.items)
+                                        Spacer(modifier = Modifier.width(20.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = collection.name,
@@ -427,5 +421,83 @@ fun UserListsScreen(
             },
             containerColor = CardDark
         )
+    }
+}
+
+@Composable
+private fun OverlapPosterStack(items: List<CollectionItemResponse>) {
+    val posters = items.mapNotNull {
+        val url = (it.movie?.photo_url ?: it.tv_show?.photo_url)
+        url?.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+    }.take(3)
+
+    Box(
+        modifier = Modifier
+            .size(width = 92.dp, height = 96.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        if (posters.isEmpty()) {
+            repeat(3) { index ->
+                val scale = 1f - (2 - index) * 0.08f
+                val translationX = (index * 12).dp
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(60.dp)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            this.translationX = translationX.toPx()
+                        }
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF1E293B).copy(alpha = 0.4f + index * 0.2f),
+                                    Color(0xFF0F172A).copy(alpha = 0.4f + index * 0.2f)
+                                )
+                            )
+                        )
+                        .border(1.dp, Color.White.copy(alpha = 0.05f + index * 0.02f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (index == 2) {
+                        Icon(
+                            imageVector = Icons.Default.List,
+                            contentDescription = null,
+                            tint = TextSecondary.copy(alpha = 0.4f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        } else {
+            val posterList = posters.reversed()
+            posterList.forEachIndexed { idx, posterUrl ->
+                val offsetStep = posters.size - 1 - idx
+                val scale = 1f - offsetStep * 0.08f
+                val translationX = (offsetStep * 12).dp
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(60.dp)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            this.translationX = translationX.toPx()
+                        }
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black)
+                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                ) {
+                    AsyncImage(
+                        model = posterUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        }
     }
 }
