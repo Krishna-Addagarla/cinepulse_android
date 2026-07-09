@@ -2,15 +2,18 @@ package com.partner.cinepulse.ui.screens.chatbot
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -104,7 +107,7 @@ fun ChatbotScreen(onNavigateBack: () -> Boolean) {
             .background(BgDark)
     ) {
         // ── Header ────────────────────────────────────────────────────────────
-        ChatHeader()
+        ChatHeader(onBackClick = { onNavigateBack() })
 
         // ── Messages ──────────────────────────────────────────────────────────
         LazyColumn(
@@ -236,12 +239,12 @@ fun ChatbotScreen(onNavigateBack: () -> Boolean) {
 
 // ── Chat Header ────────────────────────────────────────────────────────────────
 @Composable
-private fun ChatHeader() {
+private fun ChatHeader(onBackClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.Black)
-            .windowInsetsPadding(WindowInsets.statusBars)
+            .background(BgDark)
+            .statusBarsPadding()
     ) {
         Row(
             modifier = Modifier
@@ -250,11 +253,29 @@ private fun ChatHeader() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Back Button
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x8C0F1623))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
+                    .clickable { onBackClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector        = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint               = TextPrimary,
+                    modifier           = Modifier.size(18.dp)
+                )
+            }
+
             // Bot avatar
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.linearGradient(
                             colors = listOf(Color(0xFF1565C0), Color(0xFF4A148C))
@@ -262,15 +283,15 @@ private fun ChatHeader() {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🤖", fontSize = 22.sp)
+                Text(text = "🤖", fontSize = 20.sp)
             }
-
+ 
             // Title + status
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "AI Movie Concierge",
                     color = TextPrimary,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Row(
@@ -283,24 +304,24 @@ private fun ChatHeader() {
                             .clip(CircleShape)
                             .background(EmeraldGreen )
                     )
-                    Text(text = "Online • Instant responses", color = EmeraldGreen , fontSize = 12.sp)
+                    Text(text = "Online • Instant responses", color = EmeraldGreen , fontSize = 11.sp)
                 }
             }
-
+ 
             // Sparkle icon
             Box(
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(CardDark)
-                    .border(1.dp, CardBorder, CircleShape),
+                    .background(Color(0x8C0F1623))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "✨", fontSize = 18.sp)
+                Text(text = "✨", fontSize = 16.sp)
             }
         }
-
-        HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
+ 
+        HorizontalDivider(color = Color.White.copy(alpha = 0.05f), thickness = 0.5.dp)
     }
 }
 
@@ -327,15 +348,16 @@ private fun MessageBubble(message: ChatMessage) {
             ) {
                 Text(text = "🤖", fontSize = 16.sp)
             }
-
+ 
             Spacer(modifier = Modifier.width(8.dp))
-
+ 
             Column(modifier = Modifier.widthIn(max = 260.dp)) {
+                val botShape = CutCornerShape(topStart = 0.dp, topEnd = 12.dp, bottomEnd = 12.dp, bottomStart = 12.dp)
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp, 16.dp, 16.dp, 16.dp))
-                        .background(BotBubble)
-                        .border(1.dp, CardBorder, RoundedCornerShape(4.dp, 16.dp, 16.dp, 16.dp))
+                        .clip(botShape)
+                        .background(Color(0xDC0F1623))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), botShape)
                         .padding(12.dp)
                 ) {
                     Text(
@@ -345,13 +367,13 @@ private fun MessageBubble(message: ChatMessage) {
                         lineHeight = 21.sp
                     )
                 }
-
+ 
                 // Movie card if present
                 message.movieCard?.let { movie ->
                     Spacer(modifier = Modifier.height(8.dp))
                     MovieCard(movie = movie)
                 }
-
+ 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = message.time, color = TextSecondary, fontSize = 11.sp)
             }
@@ -366,10 +388,12 @@ private fun MessageBubble(message: ChatMessage) {
                 modifier = Modifier.widthIn(max = 240.dp),
                 horizontalAlignment = Alignment.End
             ) {
+                val userShape = CutCornerShape(topStart = 12.dp, topEnd = 0.dp, bottomEnd = 12.dp, bottomStart = 12.dp)
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp, 4.dp, 16.dp, 16.dp))
+                        .clip(userShape)
                         .background(AccentBlue)
+                        .border(1.dp, Color.White.copy(alpha = 0.15f), userShape)
                         .padding(12.dp)
                 ) {
                     Text(
@@ -382,9 +406,9 @@ private fun MessageBubble(message: ChatMessage) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = message.time, color = TextSecondary, fontSize = 11.sp)
             }
-
+ 
             Spacer(modifier = Modifier.width(8.dp))
-
+ 
             // User avatar
             Box(
                 modifier = Modifier

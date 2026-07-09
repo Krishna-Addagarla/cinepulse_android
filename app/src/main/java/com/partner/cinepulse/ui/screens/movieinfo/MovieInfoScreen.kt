@@ -661,19 +661,16 @@ private fun InfoChip(text: String) {
 private fun StarRatingRow(rating: Double) {
     Row(
         verticalAlignment     = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        repeat(5) { i ->
-            Icon(
-                imageVector        = if (i < rating) Icons.Default.Star else Icons.Outlined.StarOutline,
-                contentDescription = null,
-                tint               = if (i < rating) AccentGold else TextSecondary,
-                modifier           = Modifier.size(24.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = rating.toString(), color = AccentGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text(text = " / 5", color = TextSecondary, fontSize = 14.sp)
+        Icon(
+            imageVector        = Icons.Default.Star,
+            contentDescription = null,
+            tint               = AccentGold,
+            modifier           = Modifier.size(28.dp)
+        )
+        Text(text = "%.1f".format(rating), color = AccentGold, fontSize = 22.sp, fontWeight = FontWeight.Black)
+        Text(text = "/ 10", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -846,15 +843,22 @@ private fun ReviewCard(
                     text = review.user_name.substringBefore("@"),
                     color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    repeat(5) { i ->
-                        Icon(
-                            imageVector = if (i < review.rating) Icons.Default.Star else Icons.Outlined.StarOutline,
-                            contentDescription = null,
-                            tint = if (i < review.rating) AccentGold else TextSecondary,
-                            modifier = Modifier.size(13.dp)
-                        )
-                    }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = AccentGold,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = "%.1f".format(review.rating.toDouble()),
+                        color = AccentGold,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

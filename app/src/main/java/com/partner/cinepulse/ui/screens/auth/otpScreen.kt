@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -109,11 +111,12 @@ fun OtpVerificationScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Spacer(modifier = Modifier.height(56.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // ── Back button ───────────────────────────────────────────────────
             Row(
@@ -122,18 +125,18 @@ fun OtpVerificationScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(CardDark)
-                        .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x8C0F1623))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
                         .clickable { onNavigateBack() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(18.dp)
+                        tint = TextPrimary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -389,16 +392,20 @@ private fun OtpDigitBox(
     onValueChange: (String) -> Unit,
     onBackspace: () -> Unit
 ) {
+    var isFieldFocused by remember { mutableStateOf(false) }
+
     val borderColor = when {
-        hasError        -> AccentRed
-        digit.isNotEmpty() -> AccentBlue.copy(alpha = 0.7f)
-        else            -> CardBorder
+        hasError           -> AccentRed
+        isFieldFocused     -> AccentBlue
+        digit.isNotEmpty() -> AccentBlue.copy(alpha = 0.5f)
+        else               -> Color.White.copy(alpha = 0.08f)
     }
 
     val bgColor = when {
-        hasError        -> AccentRed.copy(alpha = 0.08f)
-        digit.isNotEmpty() -> AccentBlue.copy(alpha = 0.06f)
-        else            -> CardDark
+        hasError           -> AccentRed.copy(alpha = 0.08f)
+        isFieldFocused     -> AccentBlue.copy(alpha = 0.05f)
+        digit.isNotEmpty() -> Color(0xDC0F1623)
+        else               -> Color.White.copy(alpha = 0.02f)
     }
 
     BasicTextField(
@@ -410,6 +417,7 @@ private fun OtpDigitBox(
             .background(bgColor)
             .border(1.5.dp, borderColor, RoundedCornerShape(12.dp))
             .focusRequester(focusRequester)
+            .onFocusChanged { isFieldFocused = it.isFocused }
             .onKeyEvent { event ->
                 if (event.key == Key.Backspace && event.type == KeyEventType.KeyDown) {
                     onBackspace()

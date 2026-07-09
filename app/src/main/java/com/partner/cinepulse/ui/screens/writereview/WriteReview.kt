@@ -33,6 +33,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -117,12 +120,13 @@ fun WriteReviewScreen(
     val uiState    by viewModel.uiState.collectAsState()
 
     // Navigate away as soon as the review is successfully posted
-    LaunchedEffect(uiState.isSubmitted) {
-        if (uiState.isSubmitted) Toast.makeText(context,"Review Submitted",Toast.LENGTH_SHORT).show()
-        else  Toast.makeText(context,"Review Submission Failed",Toast.LENGTH_SHORT).show()
-
-
-        if (uiState.isSubmitted) onReviewPosted()
+    LaunchedEffect(uiState.isSubmitted, uiState.errorMessage) {
+        if (uiState.isSubmitted) {
+            Toast.makeText(context, "Review Submitted", Toast.LENGTH_SHORT).show()
+            onReviewPosted()
+        } else if (uiState.errorMessage != null) {
+            Toast.makeText(context, "Review Submission Failed: ${uiState.errorMessage}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     WriteReviewContent(
@@ -168,7 +172,7 @@ fun WriteReviewContent(
     val crewRatings   = remember { mutableStateMapOf<Int, Float>() }
     var reviewText    by remember { mutableStateOf("") }
     var altPlotText   by remember { mutableStateOf("") }
-    var overallRating by remember { mutableFloatStateOf(0f) }
+    var overallRating by remember { mutableFloatStateOf(8f) }
 
     // Basic validation — overall rating and at least some review text required
     val canSubmit = overallRating > 0f && reviewText.isNotBlank() && !isSubmitting
@@ -272,7 +276,7 @@ fun WriteReviewContent(
                                 val credit = castCredits[idx]
                                 CreditRateCard(
                                     credit         = credit,
-                                    rating         = castRatings[credit.id] ?: 0f,
+                                    rating         = castRatings[credit.id] ?: 8f,
                                     onRatingChange = { castRatings[credit.id] = it }
                                 )
                             }
@@ -281,7 +285,7 @@ fun WriteReviewContent(
                     HorizontalDivider(color = CardBorder, thickness = 0.5.dp)
                 }
             }
-
+ 
             // ── Rate the Crew ─────────────────────────────────────────────────
             if (crewCredits.isNotEmpty()) {
                 item {
@@ -296,7 +300,7 @@ fun WriteReviewContent(
                                 val credit = crewCredits[idx]
                                 CreditRateCard(
                                     credit         = credit,
-                                    rating         = crewRatings[credit.id] ?: 0f,
+                                    rating         = crewRatings[credit.id] ?: 8f,
                                     onRatingChange = { crewRatings[credit.id] = it }
                                 )
                             }
@@ -354,51 +358,45 @@ fun WriteReviewContent(
                         color    = TextSecondary,
                         fontSize = 13.sp
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier              = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment     = Alignment.CenterVertically
-                    ) {
-                        repeat(5) { i ->
-                            val filled = i < overallRating
-                            Icon(
-                                imageVector        = if (filled) Icons.Default.Star else Icons.Outlined.StarOutline,
-                                contentDescription = "Star ${i + 1}",
-                                tint               = if (filled) AccentGold else TextSecondary,
-                                modifier           = Modifier
-                                    .size(40.dp)
-                                    .clickable { overallRating = (i + 1).toFloat() }
-                                    .padding(4.dp)
-                            )
-                        }
-                    }
-
+                    Spacer(modifier = Modifier.height(12.dp))
+ 
+                    Slider(
+                        value = overallRating,
+                        onValueChange = { overallRating = it },
+                        valueRange = 1f..10f,
+                        steps = 8, // 1 to 10
+                        colors = SliderDefaults.colors(
+                            thumbColor = AccentGold,
+                            activeTrackColor = AccentGold,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.08f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                    )
+ 
                     Spacer(modifier = Modifier.height(10.dp))
-
-                    val ratingLabel = when (overallRating.toInt()) {
-                        0    -> "Tap a star to rate"
-                        1    -> "⭐ Poor"
-                        2    -> "⭐⭐ Fair"
-                        3    -> "⭐⭐⭐ Good"
-                        4    -> "⭐⭐⭐⭐ Great"
-                        5    -> "⭐⭐⭐⭐⭐ Masterpiece!"
-                        else -> ""
+ 
+                    val ratingLabel = when {
+                        overallRating < 3.0f -> "Terrible 😠"
+                        overallRating < 5.0f -> "Mediocre 😐"
+                        overallRating < 7.0f -> "Good 🙂"
+                        overallRating < 9.0f -> "Excellent 🤩"
+                        else -> "Masterpiece! 🏆"
                     }
                     Text(
                         text       = ratingLabel,
-                        color      = if (overallRating > 0) AccentGold else TextSecondary,
+                        color      = AccentGold,
                         fontSize   = 14.sp,
-                        fontWeight = if (overallRating > 0) FontWeight.Bold else FontWeight.Normal,
+                        fontWeight = FontWeight.Bold,
                         modifier   = Modifier.fillMaxWidth(),
                         textAlign  = TextAlign.Center
                     )
-
+ 
                     if (overallRating > 0) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text      = "${overallRating.toInt()}.0 / 5.0",
+                            text      = "${overallRating.toInt()}.0 / 10.0",
                             color     = TextSecondary,
                             fontSize  = 12.sp,
                             modifier  = Modifier.fillMaxWidth(),
@@ -497,52 +495,72 @@ private fun CreditRateCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(130.dp)
+                .height(110.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(CardDark)
                 .border(1.dp, CardBorder, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
-            AsyncImage(
-                model              = credit.photo_url,
-                contentDescription = credit.name,
-                modifier           = Modifier.fillMaxSize(),
-                contentScale       = ContentScale.Crop
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier              = Modifier.fillMaxWidth()
-        ) {
-            repeat(5) { i ->
-                Icon(
-                    imageVector        = if (i < rating) Icons.Default.Star else Icons.Outlined.StarOutline,
-                    contentDescription = "Star ${i + 1}",
-                    tint               = if (i < rating) AccentGold else TextSecondary,
-                    modifier           = Modifier
-                        .size(20.dp)
-                        .clickable { onRatingChange((i + 1).toFloat()) }
+            val photoUrl = credit.photo_url?.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+            if (photoUrl != null) {
+                AsyncImage(
+                    model              = photoUrl,
+                    contentDescription = credit.name,
+                    modifier           = Modifier.fillMaxSize(),
+                    contentScale       = ContentScale.Crop
                 )
+            } else {
+                val initials = credit.name.split(" ")
+                    .take(2)
+                    .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+                    .joinToString("")
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF4158D0), Color(0xFFC850C0), Color(0xFFFFCC70))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = initials.ifEmpty { "?" }, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
+ 
+        Spacer(modifier = Modifier.height(8.dp))
+ 
         Text(
             text       = credit.name,
             color      = TextPrimary,
             fontSize   = 11.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             maxLines   = 1
         )
         // Cast → character name; Crew → role title
         val subtitle = if (credit.character_name.isNotBlank()) credit.character_name else credit.role.name
         Text(text = subtitle, color = TextSecondary, fontSize = 10.sp, maxLines = 1)
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        androidx.compose.material3.Slider(
+            value = rating,
+            onValueChange = { onRatingChange(it) },
+            valueRange = 1f..10f,
+            steps = 8,
+            colors = SliderDefaults.colors(
+                thumbColor = AccentGold,
+                activeTrackColor = AccentGold,
+                inactiveTrackColor = Color.White.copy(alpha = 0.08f)
+            ),
+            modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = 4.dp)
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
         Text(
-            text       = if (rating > 0) "${rating.toInt()}/5" else "—",
+            text       = if (rating > 0) "${rating.toInt()}/10" else "—",
             color      = if (rating > 0) AccentGold else TextSecondary,
             fontSize   = 11.sp,
             fontWeight = FontWeight.Bold

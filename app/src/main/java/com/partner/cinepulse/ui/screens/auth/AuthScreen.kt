@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -349,13 +350,13 @@ private fun AppLogo() {
 
 @Composable
 private fun ModeToggle(isSignIn: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-        .background(CardDark)
-        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+        .background(Color(0xDC0F1623))
+        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
         .padding(4.dp)) {
         listOf(true to "Sign In", false to "Sign Up").forEach { (mode, label) ->
             Box(
-                modifier = Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(9.dp))
+                modifier = Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(10.dp))
                     .background(if (isSignIn == mode) Brush.linearGradient(listOf(AccentBlue, Color(0xFF0D47A1))) else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)))
                     .clickable { onToggle(mode) },
                 contentAlignment = Alignment.Center
@@ -367,21 +368,60 @@ private fun ModeToggle(isSignIn: Boolean, onToggle: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun AuthInputField(value: String, onValueChange: (String) -> Unit, placeholder: String, icon: ImageVector, keyboardType: KeyboardType = KeyboardType.Text, isPassword: Boolean = false, showPassword: Boolean = false, onToggleVisibility: (() -> Unit)? = null) {
+private fun AuthInputField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    icon: ImageVector,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    isPassword: Boolean = false,
+    showPassword: Boolean = false,
+    onToggleVisibility: (() -> Unit)? = null
+) {
+    var isFocused by remember { mutableStateOf(false) }
     val visualTransformation = if (isPassword && !showPassword) PasswordVisualTransformation() else VisualTransformation.None
-    Row(modifier = Modifier.fillMaxWidth().height(54.dp).clip(RoundedCornerShape(12.dp)).background(CardDark).border(1.dp, CardBorder, RoundedCornerShape(12.dp)).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Icon(icon, null, tint = TextSecondary, modifier = Modifier.size(18.dp))
-        BasicTextField(
-            value = value, onValueChange = onValueChange, modifier = Modifier.weight(1f),
-            textStyle = TextStyle(color = TextPrimary, fontSize = 14.sp), singleLine = true,
-            visualTransformation = visualTransformation, keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            cursorBrush = SolidColor(AccentBlue),
-            decorationBox = { inner -> if (value.isEmpty()) Text(placeholder, color = TextSecondary, fontSize = 14.sp); inner() }
-        )
-        if (isPassword && onToggleVisibility != null) {
-            Icon(if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, tint = TextSecondary, modifier = Modifier.size(18.dp).clickable { onToggleVisibility() })
-        }
-    }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { isFocused = it.isFocused },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isFocused) AccentBlue else TextSecondary,
+                modifier = Modifier.size(18.dp)
+            )
+        },
+        trailingIcon = if (isPassword && onToggleVisibility != null) {
+            {
+                Icon(
+                    imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clickable { onToggleVisibility() }
+                )
+            }
+        } else null,
+        placeholder = { Text(placeholder, color = TextSecondary, fontSize = 14.sp) },
+        visualTransformation = visualTransformation,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary,
+            focusedContainerColor = Color(0xDC0F1623),
+            unfocusedContainerColor = Color(0xDC0F1623),
+            focusedBorderColor = AccentBlue,
+            unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
+            cursorColor = AccentBlue
+        ),
+        shape = RoundedCornerShape(14.dp)
+    )
 }
 
 // ── FIXED PREVIEW ──────────────────────────────────────────────────────────────

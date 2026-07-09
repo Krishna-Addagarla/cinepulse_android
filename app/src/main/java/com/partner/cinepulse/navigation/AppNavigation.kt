@@ -24,12 +24,14 @@ import com.partner.cinepulse.data.repository.AuthRepository
 import com.partner.cinepulse.utils.Resource
 import com.partner.cinepulse.ui.screens.fanclub.CreateFanClubScreen
 import com.partner.cinepulse.ui.screens.fanclub.DiscussionsScreen
+import com.partner.cinepulse.ui.screens.createpost.CreatePostScreen
 import com.partner.cinepulse.ui.screens.home.HomeScreen
 import com.partner.cinepulse.ui.screens.movieinfo.MovieInfoScreen
 import com.partner.cinepulse.ui.screens.review.WriteReviewScreen
 import com.partner.cinepulse.ui.screens.reviews.ReviewsScreen
 import com.partner.cinepulse.ui.screens.search.SearchScreen
 import com.partner.cinepulse.ui.screens.userInfo.UserInfoScreen
+import com.partner.cinepulse.ui.screens.onboarding.OnboardingScreen
 
 @Composable
 fun AppNavigation(
@@ -307,6 +309,24 @@ fun AppNavigation(
                 com.partner.cinepulse.ui.screens.account.AccountSettingsScreen(
                     onBackClick = { navController.popBackStack() },
                     onEditProfileClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(Screen.Onboarding.route) {
+                OnboardingScreen(
+                    onOnboardingCompleted = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.CreatePost.route) {
+                CreatePostScreen(
+                    onNavigateBack = {
                         navController.popBackStack()
                     }
                 )

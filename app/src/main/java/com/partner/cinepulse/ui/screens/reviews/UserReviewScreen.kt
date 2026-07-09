@@ -34,6 +34,7 @@ import coil.compose.AsyncImage
 import com.partner.cinepulse.data.remote.models.movieResponse
 import com.partner.cinepulse.data.remote.models.reviewRequest
 import com.partner.cinepulse.data.remote.models.reviewResponse
+import com.partner.cinepulse.data.remote.models.performanceRating
 import com.partner.cinepulse.data.repository.ContentRepository
 import com.partner.cinepulse.ui.theme.*
 import com.partner.cinepulse.utils.Resource
@@ -63,13 +64,19 @@ class UserReviewViewModel @Inject constructor(
         }
     }
 
-    fun submitReview(movieId: Int, rating: Double, reviewText: String, onSuccess: () -> Unit) {
+    fun submitReview(
+        movieId: Int,
+        rating: Double,
+        reviewText: String,
+        performanceRatings: List<performanceRating>,
+        onSuccess: () -> Unit
+    ) {
         _submitState.value = Resource.Loading()
         viewModelScope.launch {
             val request = reviewRequest(
                 rating = rating,
                 review_text = reviewText,
-                performance_ratings = emptyList()
+                performance_ratings = performanceRatings
             )
             contentRepository.postReview(movieId, request).collect { result ->
                 _submitState.value = result
@@ -98,8 +105,8 @@ fun UserReviewScreen(
         onBackClick = onBackClick,
         movieState = movieState,
         submitState = submitState,
-        onSubmit = { rating, text ->
-            viewModel.submitReview(movieId, rating, text, onSuccess = onBackClick)
+        onSubmit = { rating, text, performanceRatings ->
+            viewModel.submitReview(movieId, rating, text, performanceRatings, onSuccess = onBackClick)
         }
     )
 }
@@ -109,12 +116,12 @@ fun UserReviewContent(
     onBackClick: () -> Unit,
     movieState: Resource<movieResponse>,
     submitState: Resource<reviewResponse>?,
-    onSubmit: (Double, String) -> Unit
+    onSubmit: (Double, String, List<performanceRating>) -> Unit
 ) {
-    var rating by remember { mutableStateOf(4.0) }
+    var rating by remember { mutableStateOf(8.0) }
     var reviewText by remember { mutableStateOf("") }
     var submitError by remember { mutableStateOf<String?>(null) }
-
+ 
     LaunchedEffect(submitState) {
         if (submitState is Resource.Error) {
             submitError = submitState.message ?: "Failed to post review"
@@ -122,7 +129,7 @@ fun UserReviewContent(
             submitError = null
         }
     }
-
+ 
     Scaffold(
         containerColor = BgDark
     ) { paddingValues ->
@@ -165,9 +172,9 @@ fun UserReviewContent(
                     fontWeight = FontWeight.Bold
                 )
             }
-
+ 
             Spacer(modifier = Modifier.height(20.dp))
-
+ 
             // Movie Info Card
             when (movieState) {
                 is Resource.Loading -> {
@@ -225,7 +232,7 @@ fun UserReviewContent(
                                     )
                                 }
                             }
-
+ 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = movie.title,
@@ -251,9 +258,9 @@ fun UserReviewContent(
                     }
                 }
             }
-
+ 
             Spacer(modifier = Modifier.height(28.dp))
-
+ 
             // Rating Selection Section
             Column(
                 modifier = Modifier
@@ -268,7 +275,7 @@ fun UserReviewContent(
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-
+ 
                 // Big Numeric Rating Display
                 Text(
                     text = "%.1f".format(rating),
@@ -276,13 +283,13 @@ fun UserReviewContent(
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Black
                 )
-
+ 
                 // Rating descriptor emoji
                 val description = when {
-                    rating < 1.5 -> "Terrible 😠"
-                    rating < 2.5 -> "Mediocre 😐"
-                    rating < 3.5 -> "Good 🙂"
-                    rating < 4.5 -> "Excellent 🤩"
+                    rating < 3.0 -> "Terrible 😠"
+                    rating < 5.0 -> "Mediocre 😐"
+                    rating < 7.0 -> "Good 🙂"
+                    rating < 9.0 -> "Excellent 🤩"
                     else -> "Masterpiece! 🏆"
                 }
                 Text(
@@ -291,9 +298,9 @@ fun UserReviewContent(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-
+ 
                 Spacer(modifier = Modifier.height(20.dp))
-
+ 
                 // Overlapping Interactive Star Row + Slider
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -302,8 +309,8 @@ fun UserReviewContent(
                     Slider(
                         value = rating.toFloat(),
                         onValueChange = { rating = it.toDouble() },
-                        valueRange = 1f..5f,
-                        steps = 7, // 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0
+                        valueRange = 1f..10f,
+                        steps = 8, // 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
                         colors = SliderDefaults.colors(
                             thumbColor = AccentGold,
                             activeTrackColor = AccentGold,
@@ -314,15 +321,15 @@ fun UserReviewContent(
                             .padding(horizontal = 16.dp)
                     )
                 }
-
+ 
                 Spacer(modifier = Modifier.height(8.dp))
-
+ 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     repeat(5) { index ->
-                        val active = rating >= (index + 1)
+                        val active = rating >= ((index + 1) * 2.0)
                         Icon(
                             imageVector = if (active) Icons.Default.Star else Icons.Outlined.StarBorder,
                             contentDescription = null,
@@ -332,9 +339,119 @@ fun UserReviewContent(
                     }
                 }
             }
+ 
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // Performance Ratings for Cast & Crew
+            val movie = (movieState as? Resource.Success)?.data
+            val artistRatings = remember { mutableStateMapOf<Int, Double>() }
+
+            if (movie != null && !movie.credits.isNullOrEmpty()) {
+                LaunchedEffect(movie.credits) {
+                    movie.credits.forEach { credit ->
+                        if (!artistRatings.containsKey(credit.id)) {
+                            artistRatings[credit.id] = 8.0
+                        }
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                ) {
+                    Text(
+                        text = "Rate Artist Performances (1-10)",
+                        color = TextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xDC0F1623))
+                            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+                            .padding(14.dp)
+                    ) {
+                        movie.credits.forEach { credit ->
+                            val currentArtistRating = artistRatings[credit.id] ?: 8.0
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Avatar circle or initials
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    val photoUrl = credit.photo_url.takeIf { it.isNotEmpty() && it != "null" && it != "None" }
+                                    if (photoUrl != null) {
+                                        AsyncImage(
+                                            model = photoUrl,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        val initials = credit.name.split(" ")
+                                            .take(2)
+                                            .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+                                            .joinToString("")
+                                        Text(initials.ifEmpty { "?" }, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                // Name + Character name
+                                Column(modifier = Modifier.width(90.dp)) {
+                                    Text(credit.name, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                    Text(credit.character_name, color = TextSecondary, fontSize = 10.sp, maxLines = 1)
+                                }
+
+                                // Interactive Slider
+                                Slider(
+                                    value = currentArtistRating.toFloat(),
+                                    onValueChange = { artistRatings[credit.id] = it.toDouble() },
+                                    valueRange = 1f..10f,
+                                    steps = 8, // 1 to 10
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = AccentGold,
+                                        activeTrackColor = AccentGold,
+                                        inactiveTrackColor = Color.White.copy(alpha = 0.08f)
+                                    ),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(horizontal = 4.dp)
+                                )
+
+                                Spacer(modifier = Modifier.width(6.dp))
+
+                                // Rating text indicator
+                                Text(
+                                    text = "%.0f".format(currentArtistRating),
+                                    color = AccentGold,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.width(20.dp),
+                                    textAlign = TextAlign.End
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+ 
             Spacer(modifier = Modifier.height(32.dp))
-
+ 
             // Written Review text area
             Column(
                 modifier = Modifier
@@ -348,7 +465,7 @@ fun UserReviewContent(
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-
+ 
                 OutlinedTextField(
                     value = reviewText,
                     onValueChange = { reviewText = it },
@@ -367,18 +484,28 @@ fun UserReviewContent(
                     shape = RoundedCornerShape(14.dp),
                     textStyle = TextStyle(fontSize = 14.sp, lineHeight = 20.sp)
                 )
-
+ 
                 if (submitError != null) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(text = submitError!!, color = AccentRed, fontSize = 12.sp)
                 }
-
+ 
                 Spacer(modifier = Modifier.height(28.dp))
-
+ 
                 // Submit Button
                 Button(
                     onClick = {
-                        onSubmit(rating, reviewText)
+                        val performanceRatingsList = artistRatings.map { (artistId, ratingVal) ->
+                            val credit = movie?.credits?.firstOrNull { it.id == artistId }
+                            performanceRating(
+                                artist_id = artistId,
+                                role_id = credit?.role?.id ?: 1,
+                                person_name = credit?.name ?: "",
+                                person_type = credit?.role?.name?.ifEmpty { "actor" } ?: "actor",
+                                rating = ratingVal
+                            )
+                        }
+                        onSubmit(rating, reviewText, performanceRatingsList)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -402,7 +529,7 @@ fun UserReviewContent(
                     }
                 }
             }
-
+ 
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
